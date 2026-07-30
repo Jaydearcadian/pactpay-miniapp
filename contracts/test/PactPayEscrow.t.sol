@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import "../src/PactPayEscrow.sol";
 import "./MockERC20.sol";
+import "./FeeOnTransferERC20.sol";
 
 contract PactPayEscrowTest is Test {
     PactPayEscrow internal escrow;
@@ -30,21 +31,23 @@ contract PactPayEscrowTest is Test {
         token.approve(address(escrow), type(uint256).max);
     }
 
-    function _fund() internal {
-        PactPayEscrow.CreateContributionParams memory params = PactPayEscrow.CreateContributionParams({
+    function _params(address tokenAddress) internal view returns (PactPayEscrow.CreateContributionParams memory) {
+        return PactPayEscrow.CreateContributionParams({
             contributionId: CONTRIBUTION_ID,
             outcomeId: OUTCOME_ID,
             termsHash: TERMS_HASH,
             contributor: contributor,
             resolver: resolver,
-            token: address(token),
+            token: tokenAddress,
             amount: AMOUNT,
             deliveryDeadline: uint64(block.timestamp + 7 days),
             reviewPeriod: REVIEW_PERIOD
         });
+    }
 
+    function _fund() internal {
         vm.prank(coordinator);
-        escrow.createAndFundContribution(params);
+        escrow.createAndFundContribution(_params(address(token)));
     }
 
     function _acceptAndSubmit() internal {
@@ -63,6 +66,21 @@ contract PactPayEscrowTest is Test {
         assertEq(contribution.amount, AMOUNT);
         assertEq(token.balanceOf(address(escrow)), AMOUNT);
         assertEq(token.balanceOf(coordinator), 9_000e6);
+    }
+
+    function testFeeOnTransferTokenCannotUnderfundEscrow() public {
+        FeeOnTransferERC20 feeToken = new FeeOnTransferERC20();
+        feeToken.mint(coordinator, AMOUNT);
+
+        vm.prank(coordinator);
+        feeToken.approve(address(escrow), type(uint256).max);
+
+        vm.prank(coordinator);
+        vm.expectRevert(PactPayEscrow.FundingAmountMismatch.selector);
+        escrow.createAndFundContribution(_params(address(feeToken)));
+
+        assertEq(feeToken.balanceOf(coordinator), AMOUNT);
+        assertEq(feeToken.balanceOf(address(escrow)), 0);
     }
 
     function testContributorMustAcceptExactFrozenTerms() public {
@@ -144,6 +162,41 @@ contract PactPayEscrowTest is Test {
         vm.prank(coordinator);
         vm.expectRevert(PactPayEscrow.RevisionLimitReached.selector);
         escrow.requestRevision(CONTRIBUTION_ID);
+    }
+
+    function testRevisionClearsOldEvidenceAndProvidesNewDeadline() public {
+        _fund();
+        _acceptAndSubmit();
+
+        vm.warp(block.timestamp + 6 days);
+        uint256 requestedAt = block.timestamp;
+
+        vm.prank(coordinator);
+        escrow.requestRevision(CONTRIBUTION_ID);
+
+        PactPayEscrow.Contribution memory contribution = escrow.getContribution(CONTRIBUTION_ID);
+        assertEq(contribution.evidenceHash, bytes32(0));
+        assertEq(contribution.submittedAt, 0);
+        assertGe(contribution.deliveryDeadline, requestedAt + REVIEW_PERIOD);
+        assertEq(uint8(contribution.status), uint8(PactPayEscrow.Status.RevisionRequested));
+    }
+
+    function testCoordinatorCanRefundWhenRevisionIsNeverResubmitted() public {
+        _fund();
+        _acceptAndSubmit();
+
+        vm.warp(block.timestamp + 6 days);
+        vm.prank(coordinator);
+        escrow.requestRevision(CONTRIBUTION_ID);
+
+        PactPayEscrow.Contribution memory contribution = escrow.getContribution(CONTRIBUTION_ID);
+        vm.warp(uint256(contribution.deliveryDeadline) + 1);
+
+        vm.prank(coordinator);
+        escrow.refundNoSubmission(CONTRIBUTION_ID);
+
+        assertEq(token.balanceOf(coordinator), 10_000e6);
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Refunded));
     }
 
     function testDisputeLocksFundsUntilResolverActs() public {
