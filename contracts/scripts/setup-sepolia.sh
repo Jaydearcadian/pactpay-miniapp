@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env"
 KEYSTORE_DIR="${HOME}/.foundry/keystores"
 DEFAULT_ACCOUNT="pactpay-sepolia"
+DEFAULT_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
 EXPECTED_CHAIN_ID="11155111"
 
 PRIVATE_KEY=""
@@ -46,32 +47,48 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
+# Never reuse the placeholder from an old .env.example.
+if [[ "${SEPOLIA_RPC_URL:-}" == *".invalid"* ]]; then
+  SEPOLIA_RPC_URL=""
+fi
+
 printf '%s\n' 'PactPay Sepolia setup'
 printf '%s\n' '----------------------'
 printf '%s\n' 'This creates or reuses an encrypted Foundry keystore.'
 printf '%s\n\n' 'The private key is never written to contracts/.env.'
 
-if [[ -n "${SEPOLIA_RPC_URL:-}" ]]; then
-  read -rsp 'Sepolia RPC URL (press Enter to keep the current value): ' RPC_INPUT
-  printf '\n'
-  RPC_URL="${RPC_INPUT:-$SEPOLIA_RPC_URL}"
-else
-  read -rsp 'Sepolia RPC URL: ' RPC_URL
-  printf '\n'
-fi
+while true; do
+  if [[ -n "${SEPOLIA_RPC_URL:-}" ]]; then
+    read -rsp 'Sepolia RPC URL (Enter to keep the configured value): ' RPC_INPUT
+    printf '\n'
+    RPC_URL="${RPC_INPUT:-$SEPOLIA_RPC_URL}"
+  else
+    read -rsp 'Sepolia RPC URL (Enter to use the public Sepolia endpoint): ' RPC_INPUT
+    printf '\n'
+    RPC_URL="${RPC_INPUT:-$DEFAULT_RPC_URL}"
+  fi
 
-if [[ -z "$RPC_URL" ]]; then
-  printf 'A Sepolia RPC URL is required.\n' >&2
-  exit 1
-fi
+  if [[ -z "$RPC_URL" ]]; then
+    printf 'A Sepolia RPC URL is required.\n' >&2
+    continue
+  fi
 
-printf 'Checking RPC network...\n'
-CHAIN_ID="$(cast chain-id --rpc-url "$RPC_URL")"
-if [[ "$CHAIN_ID" != "$EXPECTED_CHAIN_ID" ]]; then
-  printf 'Refusing setup: expected Sepolia chain ID %s, received %s.\n' \
-    "$EXPECTED_CHAIN_ID" "$CHAIN_ID" >&2
-  exit 1
-fi
+  printf 'Checking RPC network...\n'
+  if ! CHAIN_ID="$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null)"; then
+    printf 'RPC connection failed. Enter another Sepolia RPC URL.\n\n' >&2
+    SEPOLIA_RPC_URL=""
+    continue
+  fi
+
+  if [[ "$CHAIN_ID" != "$EXPECTED_CHAIN_ID" ]]; then
+    printf 'Wrong network: expected Sepolia chain ID %s, received %s.\n\n' \
+      "$EXPECTED_CHAIN_ID" "$CHAIN_ID" >&2
+    SEPOLIA_RPC_URL=""
+    continue
+  fi
+
+  break
+done
 
 ACCOUNT_DEFAULT="${DEPLOYER_ACCOUNT:-$DEFAULT_ACCOUNT}"
 read -rp "Foundry account name [$ACCOUNT_DEFAULT]: " ACCOUNT_INPUT
