@@ -18,6 +18,18 @@ contract PactPayEscrow {
         Refunded
     }
 
+    struct CreateContributionParams {
+        bytes32 contributionId;
+        bytes32 outcomeId;
+        bytes32 termsHash;
+        address contributor;
+        address resolver;
+        address token;
+        uint256 amount;
+        uint64 deliveryDeadline;
+        uint32 reviewPeriod;
+    }
+
     struct Contribution {
         bytes32 outcomeId;
         bytes32 termsHash;
@@ -56,12 +68,15 @@ contract PactPayEscrow {
         bytes32 indexed outcomeId,
         address indexed coordinator,
         address contributor,
-        address resolver,
         address token,
-        uint256 amount,
+        uint256 amount
+    );
+    event ContributionPolicyCommitted(
+        bytes32 indexed contributionId,
+        bytes32 indexed termsHash,
+        address indexed resolver,
         uint64 deliveryDeadline,
-        uint32 reviewPeriod,
-        bytes32 termsHash
+        uint32 reviewPeriod
     );
     event ContributionAccepted(bytes32 indexed contributionId, address indexed contributor);
     event EvidenceSubmitted(bytes32 indexed contributionId, bytes32 indexed evidenceHash, uint64 submittedAt, uint8 revisionCount);
@@ -80,54 +95,62 @@ contract PactPayEscrow {
         _locked = 1;
     }
 
-    function createAndFundContribution(
-        bytes32 contributionId,
-        bytes32 outcomeId,
-        bytes32 termsHash,
-        address contributor,
-        address resolver,
-        address token,
-        uint256 amount,
-        uint64 deliveryDeadline,
-        uint32 reviewPeriod
-    ) external nonReentrant {
-        if (contributionId == bytes32(0) || outcomeId == bytes32(0) || termsHash == bytes32(0)) revert InvalidEvidence();
-        if (contributor == address(0) || resolver == address(0) || token == address(0)) revert InvalidAddress();
-        if (contributor == msg.sender || resolver == msg.sender || resolver == contributor) revert InvalidAddress();
-        if (amount == 0) revert InvalidAmount();
-        if (deliveryDeadline <= block.timestamp) revert InvalidDeadline();
-        if (reviewPeriod < 1 hours || reviewPeriod > 30 days) revert InvalidReviewPeriod();
-        if (_contributions[contributionId].status != Status.None) revert ContributionExists();
+    function createAndFundContribution(CreateContributionParams calldata params) external nonReentrant {
+        if (
+            params.contributionId == bytes32(0) ||
+            params.outcomeId == bytes32(0) ||
+            params.termsHash == bytes32(0)
+        ) revert InvalidEvidence();
 
-        _contributions[contributionId] = Contribution({
-            outcomeId: outcomeId,
-            termsHash: termsHash,
+        if (
+            params.contributor == address(0) ||
+            params.resolver == address(0) ||
+            params.token == address(0)
+        ) revert InvalidAddress();
+
+        if (
+            params.contributor == msg.sender ||
+            params.resolver == msg.sender ||
+            params.resolver == params.contributor
+        ) revert InvalidAddress();
+
+        if (params.amount == 0) revert InvalidAmount();
+        if (params.deliveryDeadline <= block.timestamp) revert InvalidDeadline();
+        if (params.reviewPeriod < 1 hours || params.reviewPeriod > 30 days) revert InvalidReviewPeriod();
+        if (_contributions[params.contributionId].status != Status.None) revert ContributionExists();
+
+        _contributions[params.contributionId] = Contribution({
+            outcomeId: params.outcomeId,
+            termsHash: params.termsHash,
             evidenceHash: bytes32(0),
             coordinator: msg.sender,
-            contributor: contributor,
-            resolver: resolver,
-            token: token,
-            amount: amount,
-            deliveryDeadline: deliveryDeadline,
+            contributor: params.contributor,
+            resolver: params.resolver,
+            token: params.token,
+            amount: params.amount,
+            deliveryDeadline: params.deliveryDeadline,
             submittedAt: 0,
-            reviewPeriod: reviewPeriod,
+            reviewPeriod: params.reviewPeriod,
             revisionCount: 0,
             status: Status.Funded
         });
 
-        _safeTransferFrom(token, msg.sender, address(this), amount);
+        _safeTransferFrom(params.token, msg.sender, address(this), params.amount);
 
         emit ContributionFunded(
-            contributionId,
-            outcomeId,
+            params.contributionId,
+            params.outcomeId,
             msg.sender,
-            contributor,
-            resolver,
-            token,
-            amount,
-            deliveryDeadline,
-            reviewPeriod,
-            termsHash
+            params.contributor,
+            params.token,
+            params.amount
+        );
+        emit ContributionPolicyCommitted(
+            params.contributionId,
+            params.termsHash,
+            params.resolver,
+            params.deliveryDeadline,
+            params.reviewPeriod
         );
     }
 
