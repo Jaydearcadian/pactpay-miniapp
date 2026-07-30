@@ -5,8 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "$ROOT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
 
+FORGE_STD_REPO="https://github.com/foundry-rs/forge-std.git"
 FORGE_STD_REF="bf647bd6046f2f7da30d0c2bf435e5c76a780c1b"
-FORGE_STD_MARKER="lib/forge-std/.pactpay-source-ref"
 LOG_DIR="$ROOT_DIR/verification"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 LOG_FILE="$LOG_DIR/verify-$TIMESTAMP.log"
@@ -34,14 +34,17 @@ cast --version
 anvil --version
 
 INSTALLED_REF=""
-if [[ -f "$FORGE_STD_MARKER" ]]; then
-  INSTALLED_REF="$(tr -d '[:space:]' < "$FORGE_STD_MARKER")"
+if [[ -d lib/forge-std/.git ]]; then
+  INSTALLED_REF="$(git -C lib/forge-std rev-parse HEAD)"
 fi
 
-if [[ ! -d lib/forge-std || "$INSTALLED_REF" != "$FORGE_STD_REF" ]]; then
+if [[ "$INSTALLED_REF" != "$FORGE_STD_REF" ]]; then
   rm -rf lib/forge-std
-  forge install --no-git "foundry-rs/forge-std@$FORGE_STD_REF"
-  printf '%s\n' "$FORGE_STD_REF" > "$FORGE_STD_MARKER"
+  mkdir -p lib/forge-std
+  git -C lib/forge-std init -q
+  git -C lib/forge-std remote add origin "$FORGE_STD_REPO"
+  git -C lib/forge-std fetch -q --depth 1 origin "$FORGE_STD_REF"
+  git -C lib/forge-std checkout -q --detach FETCH_HEAD
 fi
 
 if [[ ! -f lib/forge-std/src/Test.sol ]]; then
@@ -49,7 +52,7 @@ if [[ ! -f lib/forge-std/src/Test.sol ]]; then
   exit 1
 fi
 
-INSTALLED_REF="$(tr -d '[:space:]' < "$FORGE_STD_MARKER")"
+INSTALLED_REF="$(git -C lib/forge-std rev-parse HEAD)"
 if [[ "$INSTALLED_REF" != "$FORGE_STD_REF" ]]; then
   printf 'Verification failed: expected forge-std %s, found %s.\n' "$FORGE_STD_REF" "$INSTALLED_REF"
   exit 1
