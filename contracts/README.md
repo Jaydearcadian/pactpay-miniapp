@@ -32,9 +32,11 @@ Keep these private in PactPay's application layer:
 Install Foundry, then from this directory:
 
 ```bash
-forge install foundry-rs/forge-std --no-commit
+forge install foundry-rs/forge-std
 forge test -vvv
 ```
+
+Current Foundry versions do not use `--no-commit`. Installation is non-committing unless `--commit` is explicitly supplied. Use `--no-git` only when you intentionally do not want a git submodule.
 
 ## Lifecycle
 
