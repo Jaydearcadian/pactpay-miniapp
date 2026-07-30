@@ -46,10 +46,10 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
-printf 'PactPay Sepolia setup\n'
-printf '----------------------\n'
-printf 'This creates or reuses an encrypted Foundry keystore.\n'
-printf 'The private key is never written to contracts/.env.\n\n'
+printf '%s\n' 'PactPay Sepolia setup'
+printf '%s\n' '----------------------'
+printf '%s\n' 'This creates or reuses an encrypted Foundry keystore.'
+printf '%s\n\n' 'The private key is never written to contracts/.env.'
 
 if [[ -n "${SEPOLIA_RPC_URL:-}" ]]; then
   read -rsp 'Sepolia RPC URL (press Enter to keep the current value): ' RPC_INPUT
