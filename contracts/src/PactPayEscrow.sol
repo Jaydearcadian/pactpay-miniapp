@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 interface IERC20Minimal {
+    function balanceOf(address account) external view returns (uint256);
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
@@ -61,6 +62,7 @@ contract PactPayEscrow {
     error RevisionLimitReached();
     error InvalidEvidence();
     error TokenTransferFailed();
+    error FundingAmountMismatch();
     error Reentrancy();
 
     event ContributionFunded(
@@ -80,7 +82,7 @@ contract PactPayEscrow {
     );
     event ContributionAccepted(bytes32 indexed contributionId, address indexed contributor);
     event EvidenceSubmitted(bytes32 indexed contributionId, bytes32 indexed evidenceHash, uint64 submittedAt, uint8 revisionCount);
-    event RevisionRequested(bytes32 indexed contributionId, uint8 revisionCount);
+    event RevisionRequested(bytes32 indexed contributionId, uint8 revisionCount, uint64 revisionDeadline);
     event ContributionDisputed(bytes32 indexed contributionId, address indexed raisedBy);
     event ContributionSettled(bytes32 indexed contributionId, address indexed contributor, uint256 amount);
     event ContributionRefunded(bytes32 indexed contributionId, address indexed coordinator, uint256 amount);
@@ -135,7 +137,13 @@ contract PactPayEscrow {
             status: Status.Funded
         });
 
+        uint256 balanceBefore = IERC20Minimal(params.token).balanceOf(address(this));
         _safeTransferFrom(params.token, msg.sender, address(this), params.amount);
+        uint256 balanceAfter = IERC20Minimal(params.token).balanceOf(address(this));
+
+        if (balanceAfter < balanceBefore || balanceAfter - balanceBefore != params.amount) {
+            revert FundingAmountMismatch();
+        }
 
         emit ContributionFunded(
             params.contributionId,
@@ -190,9 +198,19 @@ contract PactPayEscrow {
         if (_reviewExpired(contribution)) revert ReviewExpired();
         if (contribution.revisionCount >= 1) revert RevisionLimitReached();
 
+        uint256 minimumRevisionDeadline = block.timestamp + uint256(contribution.reviewPeriod);
+        if (minimumRevisionDeadline > type(uint64).max) revert InvalidDeadline();
+
+        if (minimumRevisionDeadline > contribution.deliveryDeadline) {
+            contribution.deliveryDeadline = uint64(minimumRevisionDeadline);
+        }
+
         contribution.revisionCount = 1;
+        contribution.evidenceHash = bytes32(0);
+        contribution.submittedAt = 0;
         contribution.status = Status.RevisionRequested;
-        emit RevisionRequested(contributionId, contribution.revisionCount);
+
+        emit RevisionRequested(contributionId, contribution.revisionCount, contribution.deliveryDeadline);
     }
 
     function approveAndRelease(bytes32 contributionId) external nonReentrant {
@@ -242,7 +260,10 @@ contract PactPayEscrow {
 
     function refundNoSubmission(bytes32 contributionId) external nonReentrant {
         Contribution storage contribution = _get(contributionId);
-        _requireStatus(contribution, Status.Accepted);
+        Status current = contribution.status;
+        if (current != Status.Accepted && current != Status.RevisionRequested) {
+            revert InvalidStatus(Status.Accepted, current);
+        }
         if (msg.sender != contribution.coordinator) revert Unauthorized();
         if (block.timestamp <= contribution.deliveryDeadline) revert DeadlineNotReached();
         _refund(contributionId, contribution);
