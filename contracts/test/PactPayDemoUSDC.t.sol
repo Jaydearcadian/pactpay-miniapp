@@ -28,10 +28,12 @@ contract PactPayDemoUSDCTest is Test {
         uint256 amount = 250 * 1e6;
 
         vm.prank(holder);
-        token.approve(spender, amount);
+        bool approved = token.approve(spender, amount);
+        assertTrue(approved);
 
         vm.prank(spender);
-        token.transferFrom(holder, recipient, amount);
+        bool transferred = token.transferFrom(holder, recipient, amount);
+        assertTrue(transferred);
 
         assertEq(token.balanceOf(recipient), amount);
         assertEq(token.allowance(holder, spender), 0);
