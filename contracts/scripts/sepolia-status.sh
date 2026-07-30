@@ -29,12 +29,12 @@ set +a
 : "${DEPLOYER_ADDRESS:?DEPLOYER_ADDRESS is required}"
 
 while true; do
-  printf '\nPactPay Sepolia status\n'
-  printf '----------------------\n'
-  printf '1) Check network and balance\n'
-  printf '2) Show deployer address\n'
-  printf '3) Show latest block\n'
-  printf '4) Exit\n'
+  printf '\n%s\n' 'PactPay Sepolia status'
+  printf '%s\n' '----------------------'
+  printf '%s\n' '1) Check network and balance'
+  printf '%s\n' '2) Show deployer address'
+  printf '%s\n' '3) Show latest block'
+  printf '%s\n' '4) Exit'
   read -rp 'Choose [1-4]: ' CHOICE
 
   case "$CHOICE" in
