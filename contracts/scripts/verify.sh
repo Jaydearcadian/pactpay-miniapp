@@ -22,7 +22,7 @@ cast --version
 anvil --version
 
 if [[ ! -d lib/forge-std ]]; then
-  forge install "foundry-rs/forge-std@$FORGE_STD_REF"
+  forge install --no-git "foundry-rs/forge-std@$FORGE_STD_REF"
 fi
 
 printf '\nDependency\n'
@@ -37,6 +37,9 @@ forge build --sizes
 
 printf '\nTests\n'
 forge test -vvv
+
+printf '\nRepository state\n'
+git status --short --untracked-files=no
 
 printf '\nVerification complete\n'
 printf 'Log: %s\n' "$LOG_FILE"
