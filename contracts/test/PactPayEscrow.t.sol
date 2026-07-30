@@ -107,9 +107,7 @@ contract PactPayEscrowTest is Test {
         vm.prank(coordinator);
         vm.expectRevert(
             abi.encodeWithSelector(
-                PactPayEscrow.InvalidStatus.selector,
-                PactPayEscrow.Status.Funded,
-                PactPayEscrow.Status.Accepted
+                PactPayEscrow.InvalidStatus.selector, PactPayEscrow.Status.Funded, PactPayEscrow.Status.Accepted
             )
         );
         escrow.refundUnaccepted(CONTRIBUTION_ID);
@@ -219,9 +217,7 @@ contract PactPayEscrowTest is Test {
         vm.prank(contributor);
         vm.expectRevert(
             abi.encodeWithSelector(
-                PactPayEscrow.InvalidStatus.selector,
-                PactPayEscrow.Status.Submitted,
-                PactPayEscrow.Status.Disputed
+                PactPayEscrow.InvalidStatus.selector, PactPayEscrow.Status.Submitted, PactPayEscrow.Status.Disputed
             )
         );
         escrow.claimAfterReviewTimeout(CONTRIBUTION_ID);
@@ -293,9 +289,7 @@ contract PactPayEscrowTest is Test {
         vm.prank(coordinator);
         vm.expectRevert(
             abi.encodeWithSelector(
-                PactPayEscrow.InvalidStatus.selector,
-                PactPayEscrow.Status.Submitted,
-                PactPayEscrow.Status.Settled
+                PactPayEscrow.InvalidStatus.selector, PactPayEscrow.Status.Submitted, PactPayEscrow.Status.Settled
             )
         );
         escrow.approveAndRelease(CONTRIBUTION_ID);
