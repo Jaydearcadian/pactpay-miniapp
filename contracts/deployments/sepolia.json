@@ -1,0 +1,21 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deploymentBlock": 11384438,
+  "sourceCommit": "cee7328ff9ee1a5df0115863bcffc3d2c0423861",
+  "deployer": "0x1CB62f07FEb12cBAba8338B3415A962B9520C8b3",
+  "contracts": {
+    "PactPayDemoUSDC": {
+      "address": "0x543b3e6038D10d92648D529200C432f8FdAB63e3",
+      "transactionHash": "0x6145dc8c3590af34b4dcfb5662fc0107623f41772264abba0fb57512c4d2d2c1",
+      "name": "PactPay Demo USDC",
+      "symbol": "pUSDC",
+      "decimals": 6,
+      "initialSupply": "1000000000000"
+    },
+    "PactPayEscrow": {
+      "address": "0x8dd98bDFa3914Ef5F213dFd92679F587B88D51B6",
+      "transactionHash": "0x461f1b3355bbc80a5612900a36ec370889c2ab7b4a1432981c9b3312cf4ff8ee"
+    }
+  }
+}
