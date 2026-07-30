@@ -9,10 +9,9 @@ contract DeploySepolia is Script {
     uint256 internal constant INITIAL_SUPPLY = 1_000_000 * 1e6;
 
     function run() external returns (PactPayDemoUSDC token, PactPayEscrow escrow) {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.addr(deployerPrivateKey);
+        address deployer = vm.envAddress("DEPLOYER_ADDRESS");
 
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast(deployer);
         token = new PactPayDemoUSDC(deployer, INITIAL_SUPPLY);
         escrow = new PactPayEscrow();
         vm.stopBroadcast();
