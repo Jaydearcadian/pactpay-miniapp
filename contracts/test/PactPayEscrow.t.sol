@@ -165,10 +165,15 @@ contract PactPayEscrowTest is Test {
     }
 
     function testRevisionClearsOldEvidenceAndProvidesNewDeadline() public {
-        _fund();
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        uint64 originalDeadline = uint64(block.timestamp + 1 days);
+        params.deliveryDeadline = originalDeadline;
+
+        vm.prank(coordinator);
+        escrow.createAndFundContribution(params);
         _acceptAndSubmit();
 
-        vm.warp(block.timestamp + 6 days);
+        vm.warp(block.timestamp + 12 hours);
         uint256 requestedAt = block.timestamp;
 
         vm.prank(coordinator);
@@ -177,15 +182,20 @@ contract PactPayEscrowTest is Test {
         PactPayEscrow.Contribution memory contribution = escrow.getContribution(CONTRIBUTION_ID);
         assertEq(contribution.evidenceHash, bytes32(0));
         assertEq(contribution.submittedAt, 0);
+        assertGt(contribution.deliveryDeadline, originalDeadline);
         assertGe(contribution.deliveryDeadline, requestedAt + REVIEW_PERIOD);
         assertEq(uint8(contribution.status), uint8(PactPayEscrow.Status.RevisionRequested));
     }
 
     function testCoordinatorCanRefundWhenRevisionIsNeverResubmitted() public {
-        _fund();
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        params.deliveryDeadline = uint64(block.timestamp + 1 days);
+
+        vm.prank(coordinator);
+        escrow.createAndFundContribution(params);
         _acceptAndSubmit();
 
-        vm.warp(block.timestamp + 6 days);
+        vm.warp(block.timestamp + 12 hours);
         vm.prank(coordinator);
         escrow.requestRevision(CONTRIBUTION_ID);
 
