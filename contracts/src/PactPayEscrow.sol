@@ -81,7 +81,9 @@ contract PactPayEscrow {
         uint32 reviewPeriod
     );
     event ContributionAccepted(bytes32 indexed contributionId, address indexed contributor);
-    event EvidenceSubmitted(bytes32 indexed contributionId, bytes32 indexed evidenceHash, uint64 submittedAt, uint8 revisionCount);
+    event EvidenceSubmitted(
+        bytes32 indexed contributionId, bytes32 indexed evidenceHash, uint64 submittedAt, uint8 revisionCount
+    );
     event RevisionRequested(bytes32 indexed contributionId, uint8 revisionCount, uint64 revisionDeadline);
     event ContributionDisputed(bytes32 indexed contributionId, address indexed raisedBy);
     event ContributionSettled(bytes32 indexed contributionId, address indexed contributor, uint256 amount);
@@ -98,23 +100,18 @@ contract PactPayEscrow {
     }
 
     function createAndFundContribution(CreateContributionParams calldata params) external nonReentrant {
-        if (
-            params.contributionId == bytes32(0) ||
-            params.outcomeId == bytes32(0) ||
-            params.termsHash == bytes32(0)
-        ) revert InvalidEvidence();
+        if (params.contributionId == bytes32(0) || params.outcomeId == bytes32(0) || params.termsHash == bytes32(0)) {
+            revert InvalidEvidence();
+        }
 
-        if (
-            params.contributor == address(0) ||
-            params.resolver == address(0) ||
-            params.token == address(0)
-        ) revert InvalidAddress();
+        if (params.contributor == address(0) || params.resolver == address(0) || params.token == address(0)) {
+            revert InvalidAddress();
+        }
 
-        if (
-            params.contributor == msg.sender ||
-            params.resolver == msg.sender ||
-            params.resolver == params.contributor
-        ) revert InvalidAddress();
+        if (params.contributor == msg.sender || params.resolver == msg.sender || params.resolver == params.contributor)
+        {
+            revert InvalidAddress();
+        }
 
         if (params.amount == 0) revert InvalidAmount();
         if (params.deliveryDeadline <= block.timestamp) revert InvalidDeadline();
@@ -146,19 +143,10 @@ contract PactPayEscrow {
         }
 
         emit ContributionFunded(
-            params.contributionId,
-            params.outcomeId,
-            msg.sender,
-            params.contributor,
-            params.token,
-            params.amount
+            params.contributionId, params.outcomeId, msg.sender, params.contributor, params.token, params.amount
         );
         emit ContributionPolicyCommitted(
-            params.contributionId,
-            params.termsHash,
-            params.resolver,
-            params.deliveryDeadline,
-            params.reviewPeriod
+            params.contributionId, params.termsHash, params.resolver, params.deliveryDeadline, params.reviewPeriod
         );
     }
 
@@ -313,16 +301,14 @@ contract PactPayEscrow {
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) private {
-        (bool success, bytes memory data) = token.call(
-            abi.encodeWithSelector(IERC20Minimal.transferFrom.selector, from, to, amount)
-        );
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(IERC20Minimal.transferFrom.selector, from, to, amount));
         if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert TokenTransferFailed();
     }
 
     function _safeTransfer(address token, address to, uint256 amount) private {
-        (bool success, bytes memory data) = token.call(
-            abi.encodeWithSelector(IERC20Minimal.transfer.selector, to, amount)
-        );
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(IERC20Minimal.transfer.selector, to, amount));
         if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert TokenTransferFailed();
     }
 }
