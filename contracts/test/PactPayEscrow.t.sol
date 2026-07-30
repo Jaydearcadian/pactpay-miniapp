@@ -40,6 +40,7 @@ contract PactPayEscrowTest is Test {
             resolver: resolver,
             token: tokenAddress,
             amount: AMOUNT,
+            acceptanceDeadline: uint64(block.timestamp + 2 days),
             deliveryDeadline: uint64(block.timestamp + 7 days),
             reviewPeriod: REVIEW_PERIOD
         });
@@ -50,22 +51,127 @@ contract PactPayEscrowTest is Test {
         escrow.createAndFundContribution(_params(address(token)));
     }
 
-    function _acceptAndSubmit() internal {
+    function _fundWith(PactPayEscrow.CreateContributionParams memory params) internal {
+        vm.prank(coordinator);
+        escrow.createAndFundContribution(params);
+    }
+
+    function _accept() internal {
         vm.prank(contributor);
         escrow.acceptContribution(CONTRIBUTION_ID, TERMS_HASH);
+    }
 
+    function _acceptAndSubmit() internal {
+        _accept();
         vm.prank(contributor);
         escrow.submitEvidence(CONTRIBUTION_ID, EVIDENCE_HASH);
     }
 
     function testFundingIsAtomicAndRecorded() public {
-        _fund();
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
 
         PactPayEscrow.Contribution memory contribution = escrow.getContribution(CONTRIBUTION_ID);
         assertEq(uint8(contribution.status), uint8(PactPayEscrow.Status.Funded));
         assertEq(contribution.amount, AMOUNT);
+        assertEq(contribution.acceptanceDeadline, params.acceptanceDeadline);
+        assertEq(contribution.deliveryDeadline, params.deliveryDeadline);
         assertEq(token.balanceOf(address(escrow)), AMOUNT);
         assertEq(token.balanceOf(coordinator), 9_000e6);
+    }
+
+    function testRejectsAcceptanceDeadlineThatIsNotFuture() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        params.acceptanceDeadline = uint64(block.timestamp);
+
+        vm.prank(coordinator);
+        vm.expectRevert(PactPayEscrow.InvalidDeadline.selector);
+        escrow.createAndFundContribution(params);
+    }
+
+    function testRejectsDeliveryDeadlineAtOrBeforeAcceptanceDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        params.deliveryDeadline = params.acceptanceDeadline;
+
+        vm.prank(coordinator);
+        vm.expectRevert(PactPayEscrow.InvalidDeadline.selector);
+        escrow.createAndFundContribution(params);
+    }
+
+    function testContributorCanAcceptAtAcceptanceDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        vm.warp(params.acceptanceDeadline);
+
+        _accept();
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Accepted));
+    }
+
+    function testContributorCannotAcceptAfterAcceptanceDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        vm.warp(uint256(params.acceptanceDeadline) + 1);
+
+        vm.prank(contributor);
+        vm.expectRevert(PactPayEscrow.DeadlinePassed.selector);
+        escrow.acceptContribution(CONTRIBUTION_ID, TERMS_HASH);
+    }
+
+    function testCoordinatorCannotRefundUnacceptedAtAcceptanceDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        vm.warp(params.acceptanceDeadline);
+
+        vm.prank(coordinator);
+        vm.expectRevert(PactPayEscrow.DeadlineNotReached.selector);
+        escrow.refundUnaccepted(CONTRIBUTION_ID);
+    }
+
+    function testCoordinatorCanRefundUnacceptedAfterAcceptanceDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        vm.warp(uint256(params.acceptanceDeadline) + 1);
+
+        vm.prank(coordinator);
+        escrow.refundUnaccepted(CONTRIBUTION_ID);
+
+        assertEq(token.balanceOf(coordinator), 10_000e6);
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Refunded));
+    }
+
+    function testContributorCanSubmitAfterAcceptanceDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        _accept();
+        vm.warp(uint256(params.acceptanceDeadline) + 1);
+
+        vm.prank(contributor);
+        escrow.submitEvidence(CONTRIBUTION_ID, EVIDENCE_HASH);
+
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Submitted));
+    }
+
+    function testContributorCanSubmitAtDeliveryDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        _accept();
+        vm.warp(params.deliveryDeadline);
+
+        vm.prank(contributor);
+        escrow.submitEvidence(CONTRIBUTION_ID, EVIDENCE_HASH);
+
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Submitted));
+    }
+
+    function testContributorCannotSubmitAfterDeliveryDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        _accept();
+        vm.warp(uint256(params.deliveryDeadline) + 1);
+
+        vm.prank(contributor);
+        vm.expectRevert(PactPayEscrow.DeadlinePassed.selector);
+        escrow.submitEvidence(CONTRIBUTION_ID, EVIDENCE_HASH);
     }
 
     function testFeeOnTransferTokenCannotUnderfundEscrow() public {
@@ -90,20 +196,15 @@ contract PactPayEscrowTest is Test {
         vm.expectRevert(PactPayEscrow.InvalidEvidence.selector);
         escrow.acceptContribution(CONTRIBUTION_ID, keccak256("different-terms"));
 
-        vm.prank(contributor);
-        escrow.acceptContribution(CONTRIBUTION_ID, TERMS_HASH);
-
-        PactPayEscrow.Contribution memory contribution = escrow.getContribution(CONTRIBUTION_ID);
-        assertEq(uint8(contribution.status), uint8(PactPayEscrow.Status.Accepted));
+        _accept();
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Accepted));
     }
 
     function testCoordinatorCannotWithdrawAfterAcceptance() public {
         _fund();
-
-        vm.prank(contributor);
-        escrow.acceptContribution(CONTRIBUTION_ID, TERMS_HASH);
-
+        _accept();
         vm.warp(block.timestamp + 8 days);
+
         vm.prank(coordinator);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -120,8 +221,7 @@ contract PactPayEscrowTest is Test {
         vm.prank(coordinator);
         escrow.approveAndRelease(CONTRIBUTION_ID);
 
-        PactPayEscrow.Contribution memory contribution = escrow.getContribution(CONTRIBUTION_ID);
-        assertEq(uint8(contribution.status), uint8(PactPayEscrow.Status.Settled));
+        assertEq(uint8(escrow.getContribution(CONTRIBUTION_ID).status), uint8(PactPayEscrow.Status.Settled));
         assertEq(token.balanceOf(contributor), AMOUNT);
         assertEq(token.balanceOf(address(escrow)), 0);
     }
@@ -138,8 +238,8 @@ contract PactPayEscrowTest is Test {
     function testContributorCanClaimAfterOwnerSilence() public {
         _fund();
         _acceptAndSubmit();
-
         vm.warp(block.timestamp + REVIEW_PERIOD + 1);
+
         vm.prank(contributor);
         escrow.claimAfterReviewTimeout(CONTRIBUTION_ID);
 
@@ -164,13 +264,12 @@ contract PactPayEscrowTest is Test {
 
     function testRevisionClearsOldEvidenceAndProvidesNewDeadline() public {
         PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        params.acceptanceDeadline = uint64(block.timestamp + 6 hours);
         uint64 originalDeadline = uint64(block.timestamp + 1 days);
         params.deliveryDeadline = originalDeadline;
 
-        vm.prank(coordinator);
-        escrow.createAndFundContribution(params);
+        _fundWith(params);
         _acceptAndSubmit();
-
         vm.warp(block.timestamp + 12 hours);
         uint256 requestedAt = block.timestamp;
 
@@ -187,13 +286,13 @@ contract PactPayEscrowTest is Test {
 
     function testCoordinatorCanRefundWhenRevisionIsNeverResubmitted() public {
         PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        params.acceptanceDeadline = uint64(block.timestamp + 6 hours);
         params.deliveryDeadline = uint64(block.timestamp + 1 days);
 
-        vm.prank(coordinator);
-        escrow.createAndFundContribution(params);
+        _fundWith(params);
         _acceptAndSubmit();
-
         vm.warp(block.timestamp + 12 hours);
+
         vm.prank(coordinator);
         escrow.requestRevision(CONTRIBUTION_ID);
 
@@ -265,13 +364,23 @@ contract PactPayEscrowTest is Test {
         escrow.resolveDispute(CONTRIBUTION_ID, true);
     }
 
+    function testCoordinatorCannotRefundNoSubmissionAtDeliveryDeadline() public {
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        _accept();
+        vm.warp(params.deliveryDeadline);
+
+        vm.prank(coordinator);
+        vm.expectRevert(PactPayEscrow.DeadlineNotReached.selector);
+        escrow.refundNoSubmission(CONTRIBUTION_ID);
+    }
+
     function testCoordinatorCanRefundWhenAcceptedWorkIsNeverSubmitted() public {
-        _fund();
+        PactPayEscrow.CreateContributionParams memory params = _params(address(token));
+        _fundWith(params);
+        _accept();
+        vm.warp(uint256(params.deliveryDeadline) + 1);
 
-        vm.prank(contributor);
-        escrow.acceptContribution(CONTRIBUTION_ID, TERMS_HASH);
-
-        vm.warp(block.timestamp + 8 days);
         vm.prank(coordinator);
         escrow.refundNoSubmission(CONTRIBUTION_ID);
 
