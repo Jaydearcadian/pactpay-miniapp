@@ -31,18 +31,20 @@ contract PactPayEscrowTest is Test {
     }
 
     function _fund() internal {
+        PactPayEscrow.CreateContributionParams memory params = PactPayEscrow.CreateContributionParams({
+            contributionId: CONTRIBUTION_ID,
+            outcomeId: OUTCOME_ID,
+            termsHash: TERMS_HASH,
+            contributor: contributor,
+            resolver: resolver,
+            token: address(token),
+            amount: AMOUNT,
+            deliveryDeadline: uint64(block.timestamp + 7 days),
+            reviewPeriod: REVIEW_PERIOD
+        });
+
         vm.prank(coordinator);
-        escrow.createAndFundContribution(
-            CONTRIBUTION_ID,
-            OUTCOME_ID,
-            TERMS_HASH,
-            contributor,
-            resolver,
-            address(token),
-            AMOUNT,
-            uint64(block.timestamp + 7 days),
-            REVIEW_PERIOD
-        );
+        escrow.createAndFundContribution(params);
     }
 
     function _acceptAndSubmit() internal {
