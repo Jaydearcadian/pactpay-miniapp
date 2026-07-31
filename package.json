@@ -11,10 +11,11 @@
   "dependencies": {
     "@nimiq/mini-app-sdk": "0.1.0",
     "@vitejs/plugin-react": "6.0.5",
-    "vite": "8.1.5",
-    "typescript": "7.0.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "typescript": "7.0.2",
+    "viem": "2.55.8",
+    "vite": "8.1.5"
   },
   "devDependencies": {
     "@types/react": "19.2.17",
