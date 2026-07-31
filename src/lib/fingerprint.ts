@@ -1,10 +1,8 @@
+import { keccak256, toHex } from 'viem';
 import type { Contribution } from '../domain/model';
 
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+function fingerprint(value: string): string {
+  return keccak256(toHex(value)).slice(2);
 }
 
 export function canonicalTerms(contribution: Pick<
@@ -30,18 +28,20 @@ export function canonicalTerms(contribution: Pick<
   });
 }
 
-export function fingerprintTerms(contribution: Parameters<typeof canonicalTerms>[0]): Promise<string> {
-  return sha256Hex(canonicalTerms(contribution));
+export async function fingerprintTerms(
+  contribution: Parameters<typeof canonicalTerms>[0],
+): Promise<string> {
+  return fingerprint(canonicalTerms(contribution));
 }
 
-export function fingerprintEvidence(input: {
+export async function fingerprintEvidence(input: {
   contributionId: string;
   termsHash: string;
   link: string;
   note: string;
   submittedAt: string;
 }): Promise<string> {
-  return sha256Hex(JSON.stringify({
+  return fingerprint(JSON.stringify({
     contributionId: input.contributionId,
     termsHash: input.termsHash,
     link: input.link.trim(),
