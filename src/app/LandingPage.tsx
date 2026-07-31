@@ -8,6 +8,7 @@ export function LandingPage() {
         <a href="#how-it-works">How it works</a>
         <a href="#privacy">Privacy</a>
         <a href="#settlement">Settlement</a>
+        <button onClick={() => { window.location.hash = '/demo'; }}>Demo</button>
       </div>
       <div className="navActions">
         <button className="secondary" onClick={() => { window.location.hash = '/wallet'; }}>Connect wallet</button>
@@ -30,7 +31,7 @@ export function LandingPage() {
         <p>PactPay gives every contributor a clear private agreement, a defined entitlement, and verifiable NIM settlement—without exposing the rest of the deal.</p>
         <div className="actions">
           <button className="primary" onClick={() => { window.location.hash = '/app'; }}>Create an outcome</button>
-          <a className="secondary linkButton" href="#how-it-works">See how it works</a>
+          <button className="secondary" onClick={() => { window.location.hash = '/demo'; }}>Watch the guided demo</button>
         </div>
         <div className="trustLine"><span>No accounts required</span><span>Private handoff links</span><span>Nimiq Pay settlement</span></div>
       </div>
@@ -71,12 +72,12 @@ export function LandingPage() {
 
     <section className="finalCta">
       <p className="eyebrow">PACTPAY</p><h2>Build the outcome without exposing the whole deal.</h2>
-      <div className="actions"><button className="primary" onClick={() => { window.location.hash = '/app'; }}>Create your first outcome</button><button className="secondary" onClick={() => { window.location.hash = '/wallet'; }}>Connect Nimiq wallet</button></div>
+      <div className="actions"><button className="primary" onClick={() => { window.location.hash = '/demo'; }}>Open guided demo</button><button className="secondary" onClick={() => { window.location.hash = '/app'; }}>Create your first outcome</button></div>
     </section>
 
     <footer className="siteFooter">
       <div><strong>PactPay</strong><p>Clear terms. Private fulfilment. Verifiable NIM settlement.</p></div>
-      <div className="footerLinks"><a href="#how-it-works">How it works</a><a href="#privacy">Privacy</a><a href="#settlement">Settlement</a><button onClick={() => { window.location.hash = '/app'; }}>Open app</button></div>
+      <div className="footerLinks"><a href="#how-it-works">How it works</a><a href="#privacy">Privacy</a><a href="#settlement">Settlement</a><button onClick={() => { window.location.hash = '/demo'; }}>Demo</button><button onClick={() => { window.location.hash = '/app'; }}>Open app</button></div>
     </footer>
   </main>;
 }
