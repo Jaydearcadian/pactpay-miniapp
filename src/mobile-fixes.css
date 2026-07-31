@@ -1,0 +1,208 @@
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+.sheet,
+.ledger,
+.inviteSheet,
+.handoffCard,
+.metrics article,
+.outcomeIndex,
+.darkSheet {
+  min-width: 0;
+}
+
+.evidenceBox,
+.receiptMini,
+.receiptSheet dd,
+.handoffCard,
+.notice,
+.privacyBox,
+.paymentSummary {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 680px) {
+  body {
+    background: #090b0a;
+  }
+
+  .appShell {
+    width: 100%;
+    padding: max(10px, env(safe-area-inset-top)) 10px calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    padding-bottom: 12px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand div {
+    min-width: 0;
+  }
+
+  .brand strong,
+  .brand small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hero {
+    padding: 24px 18px;
+    border-radius: 20px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.65rem, 15vw, 4.25rem);
+    line-height: .9;
+    letter-spacing: -.055em;
+    overflow-wrap: normal;
+  }
+
+  .heroCopy {
+    font-size: .98rem;
+    line-height: 1.6;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .actions button,
+  .primary,
+  .secondary,
+  .textButton,
+  .linkButton {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics article {
+    padding: 13px;
+  }
+
+  .metrics strong {
+    font-size: 1.45rem;
+  }
+
+  .outcomeIndex {
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .indexHead,
+  .outcomeLink {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ledger {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .ledgerHead,
+  .sheetHead {
+    gap: 10px;
+  }
+
+  .ledgerHead h2 {
+    font-size: 2rem;
+  }
+
+  .sheet {
+    padding: 17px;
+    border-radius: 16px;
+  }
+
+  .formGrid,
+  .formGrid.two,
+  .deadlineGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  input,
+  textarea {
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  textarea {
+    min-height: 112px;
+  }
+
+  .trustTrack {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .trustTrack span {
+    padding-top: 0;
+    padding-left: 18px;
+  }
+
+  .trustTrack span::before {
+    top: .3em;
+    width: 8px;
+    height: 8px;
+  }
+
+  .inviteWrap {
+    min-height: auto;
+    padding-top: 4px;
+  }
+
+  .inviteSheet > h1 {
+    font-size: clamp(2.35rem, 13vw, 3.6rem);
+  }
+
+  .walletLauncher {
+    left: 10px;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: auto;
+    justify-content: center;
+    min-height: 52px;
+  }
+
+  footer {
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.45rem, 14vw, 3.35rem);
+  }
+
+  .appShell {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
