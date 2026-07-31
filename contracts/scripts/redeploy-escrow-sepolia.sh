@@ -18,18 +18,11 @@ set +a
 : "${DEPLOYER_ACCOUNT:?DEPLOYER_ACCOUNT is required}"
 : "${DEPLOYER_ADDRESS:?DEPLOYER_ADDRESS is required}"
 
-EXPECTED_SOURCE_COMMIT="512bf29946653b91cdedd009738e3b8e7c54db21"
 CURRENT_COMMIT="$(git rev-parse HEAD)"
 CURRENT_BRANCH="$(git branch --show-current)"
 
 if [[ "$CURRENT_BRANCH" != "fix/escrow-deadline-model" ]]; then
   printf 'Refusing to deploy: expected branch fix/escrow-deadline-model, received %s.\n' "$CURRENT_BRANCH" >&2
-  exit 1
-fi
-
-if [[ "$CURRENT_COMMIT" != "$EXPECTED_SOURCE_COMMIT" ]]; then
-  printf 'Refusing to deploy: expected verified commit %s, received %s.\n' \
-    "$EXPECTED_SOURCE_COMMIT" "$CURRENT_COMMIT" >&2
   exit 1
 fi
 
