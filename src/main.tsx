@@ -3,10 +3,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './app/App';
 import { ResponseApp } from './app/ResponseApp';
+import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
 import './styles.css';
 
 function RootRouter() {
   const [hash, setHash] = useState(window.location.hash);
+  useOutcomeFormFocus();
 
   useEffect(() => {
     const onHashChange = () => setHash(window.location.hash);
