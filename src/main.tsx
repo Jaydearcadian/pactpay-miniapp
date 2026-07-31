@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './app/App';
+import { LandingPage } from './app/LandingPage';
 import { ResponseApp } from './app/ResponseApp';
 import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
 import { WalletLauncher, WalletPage } from './app/WalletPage';
@@ -22,8 +23,10 @@ function RootRouter() {
 
   if (hash.startsWith('#/response/')) return <ResponseApp />;
   if (hash === '#/wallet') return <WalletPage />;
+  if (hash === '#/app') return <><App /><WalletLauncher /></>;
+  if (hash.startsWith('#/invite/') || hash.startsWith('#/receipt/')) return <App />;
 
-  return <><App /><WalletLauncher /></>;
+  return <LandingPage />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
