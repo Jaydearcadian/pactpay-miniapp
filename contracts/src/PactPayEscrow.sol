@@ -117,10 +117,9 @@ contract PactPayEscrow {
         }
 
         if (params.amount == 0) revert InvalidAmount();
-        if (
-            params.acceptanceDeadline <= block.timestamp
-                || params.deliveryDeadline <= params.acceptanceDeadline
-        ) revert InvalidDeadline();
+        if (params.acceptanceDeadline <= block.timestamp || params.deliveryDeadline <= params.acceptanceDeadline) {
+            revert InvalidDeadline();
+        }
         if (params.reviewPeriod < 1 hours || params.reviewPeriod > 30 days) revert InvalidReviewPeriod();
         if (_contributions[params.contributionId].status != Status.None) revert ContributionExists();
 
