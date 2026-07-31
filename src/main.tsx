@@ -8,6 +8,7 @@ import { LandingPage } from './app/LandingPage';
 import { ResponseApp } from './app/ResponseApp';
 import { useInvitationEntry } from './app/useInvitationEntry';
 import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
+import { useProductCopyRefinement } from './app/useProductCopyRefinement';
 import { WalletLauncher, WalletPage } from './app/WalletPage';
 import { installNoticeAutoDismiss } from './lib/noticeAutoDismiss';
 import { installShareFallback } from './lib/shareFallback';
@@ -23,6 +24,7 @@ function RootRouter() {
   const [hash, setHash] = useState(window.location.hash);
   useOutcomeFormFocus();
   useInvitationEntry();
+  useProductCopyRefinement();
 
   useEffect(() => installNoticeAutoDismiss(), []);
 
