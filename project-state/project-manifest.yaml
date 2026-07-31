@@ -1,0 +1,58 @@
+project:
+  id: pactpay
+  name: PactPay
+  status: proposed
+  constitution:
+    version: 2.0.0
+  maturity:
+    project: M6
+    decisive_capability: M6
+  canonical_product:
+    artifact: product-truth
+    version: 0.9.0
+    status: proposed-reconstruction
+  active_profile:
+    id: general-product
+  context_profile:
+    id: standard
+    escalated: false
+  core_skills:
+    activation: selective
+    primary_owner:
+      skill: experience-narrative-engine
+      mode: experience-thesis
+    protected_dependencies:
+      - product-truth-engine
+    consults:
+      required:
+        - brand-visual-systems-engine
+        - design-to-product-engine
+      activated_conditional:
+        - system-integrity-engine
+        - interface-ecosystem-engine
+      not_activated:
+        - accessibility-localization-pack
+  specialists:
+    required: []
+    optional:
+      - accessibility-localization-pack
+  domain_packs: []
+  adapters:
+    - github-adapter
+  release:
+    type: demo-only
+    version: 0.1.0
+    status: not-gated
+  protected:
+    - primary_user
+    - painful_moment
+    - desired_outcome
+    - product_definition
+    - decisive_workflow
+    - product_invariants
+    - trust_privacy_authority_model
+    - mvp_scope
+    - non_goals
+  notes:
+    - The repository did not contain a Product Foundry project manifest before this run.
+    - The canonical Product Truth artifact is reconstructed as proposed from accepted project context and the existing brand system; Product Truth canonicalization remains owned by product-truth-engine.
