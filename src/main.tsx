@@ -17,6 +17,7 @@ import './landing.css';
 import './demo.css';
 import './feedback.css';
 import './handoff.css';
+import './mobile-fixes.css';
 
 installShareFallback();
 
