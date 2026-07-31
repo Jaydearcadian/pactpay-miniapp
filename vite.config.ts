@@ -6,4 +6,12 @@ export default defineConfig({
   // Relative assets allow the same build to run on GitHub Pages, a custom
   // domain, or inside Nimiq Pay without changing application routes.
   base: './',
+  server: {
+    host: '0.0.0.0',
+    allowedHosts: ['.trycloudflare.com'],
+  },
+  preview: {
+    host: '0.0.0.0',
+    allowedHosts: ['.trycloudflare.com'],
+  },
 });
