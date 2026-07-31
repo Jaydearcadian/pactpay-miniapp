@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import { connectNimiq } from '../nimiq/client';
+import { connectNimiq, getConnectedNimiqAccount } from '../nimiq/client';
 
 function short(value: string): string {
   return value.length > 22 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value;
 }
 
 function openInNimiqPayUrl(): string {
-  return `nimiqpay://miniapp?url=${encodeURIComponent(window.location.href.replace(window.location.hash, '#/wallet'))}`;
+  const target = `${window.location.origin}${window.location.pathname}#/wallet`;
+  return `nimiqpay://miniapp?url=${encodeURIComponent(target)}`;
 }
 
 export function WalletPage() {
-  const [account, setAccount] = useState('');
+  const [account, setAccount] = useState(getConnectedNimiqAccount);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
-  const insideNimiqPay = 'nimiqPay' in window;
 
   async function connect() {
     setBusy(true);
@@ -34,7 +34,7 @@ export function WalletPage() {
       <button className="brand" onClick={() => { window.location.hash = '/'; }}>
         <span>P</span><div><strong>PactPay</strong><small>Private outcome settlement</small></div>
       </button>
-      <button className="secondary" onClick={() => { window.location.hash = '/'; }}>Back to outcomes</button>
+      <div className="navActions"><button className="secondary" onClick={() => { window.location.hash = '/'; }}>Home</button><button className="primary" onClick={() => { window.location.hash = '/app'; }}>Open app</button></div>
     </header>
 
     {status && <div className="notice" role="status">{status}</div>}
@@ -43,39 +43,22 @@ export function WalletPage() {
       <article className="sheet inviteSheet walletPage">
         <p className="eyebrow">NIMIQ PAY</p>
         <h1>Your settlement wallet</h1>
-        <p className="outcomeAlias">PactPay asks Nimiq Pay for an account only when you accept a contribution or approve a settlement.</p>
+        <p className="outcomeAlias">Connect once for this session. Nimiq Pay still asks for explicit approval when an account is shared or a NIM payment is sent.</p>
 
-        <div className="privacyBox">
-          <strong>Your keys never enter PactPay</strong>
-          <p>Nimiq Pay shows a native confirmation for account access and every NIM payment. PactPay receives only the approved address or transaction hash.</p>
-        </div>
+        <div className="privacyBox"><strong>Your keys never enter PactPay</strong><p>PactPay receives only the account you approve and the transaction hash returned after an approved payment.</p></div>
 
-        {account ? <div className="connected">
-          <span>Connected account</span>
-          <strong>{short(account)}</strong>
-        </div> : insideNimiqPay ? <button className="primary wide" disabled={busy} onClick={connect}>
-          {busy ? 'Waiting for approval…' : 'Connect Nimiq account'}
-        </button> : <>
-          <div className="paymentSummary">
-            <span>Wallet provider unavailable</span>
-            <strong>Open PactPay inside Nimiq Pay</strong>
-            <small>A normal desktop browser does not inject the Nimiq wallet provider.</small>
-          </div>
-          <a className="primary wide linkButton" href={openInNimiqPayUrl()}>Open in Nimiq Pay</a>
+        {account ? <div className="connected"><span>Connected account</span><strong>{short(account)}</strong><button className="secondary" onClick={connect} disabled={busy}>Choose another account</button></div> : <>
+          <button className="primary wide" disabled={busy} onClick={connect}>{busy ? 'Waiting for Nimiq Pay…' : 'Connect Nimiq account'}</button>
+          <p className="walletHint">Inside Nimiq Pay, this opens the native account approval. In a normal browser, PactPay will explain that the wallet provider is unavailable.</p>
+          <a className="secondary wide linkButton" href={openInNimiqPayUrl()}>Open this page in Nimiq Pay</a>
         </>}
 
-        <ol className="walletSteps">
-          <li><strong>Open Nimiq Pay</strong><span>Use the Mini Apps section and enter the PactPay URL during development.</span></li>
-          <li><strong>Approve account access</strong><span>Nimiq Pay lets you choose the address used for acceptance or settlement.</span></li>
-          <li><strong>Approve each payment</strong><span>The native wallet confirmation shows recipient and NIM amount before sending.</span></li>
-        </ol>
+        <ol className="walletSteps"><li><strong>Open PactPay in Nimiq Pay</strong><span>Use the Mini Apps area or the button above.</span></li><li><strong>Connect your account</strong><span>Choose the address used for accepting contributions or sending settlements.</span></li><li><strong>Approve every payment</strong><span>Nimiq Pay shows the recipient and amount before anything is sent.</span></li></ol>
       </article>
     </section>
   </main>;
 }
 
 export function WalletLauncher() {
-  return <button className="walletLauncher" onClick={() => { window.location.hash = '/wallet'; }}>
-    <span className="walletDot" /> Wallet & Nimiq Pay
-  </button>;
+  return <button className="walletLauncher" onClick={() => { window.location.hash = '/wallet'; }}><span className="walletDot" /> Wallet & Nimiq Pay</button>;
 }
