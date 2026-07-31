@@ -4,7 +4,11 @@ import ReactDOM from 'react-dom/client';
 import { App } from './app/App';
 import { ResponseApp } from './app/ResponseApp';
 import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
+import { WalletLauncher, WalletPage } from './app/WalletPage';
+import { installShareFallback } from './lib/shareFallback';
 import './styles.css';
+
+installShareFallback();
 
 function RootRouter() {
   const [hash, setHash] = useState(window.location.hash);
@@ -16,7 +20,10 @@ function RootRouter() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  return hash.startsWith('#/response/') ? <ResponseApp /> : <App />;
+  if (hash.startsWith('#/response/')) return <ResponseApp />;
+  if (hash === '#/wallet') return <WalletPage />;
+
+  return <><App /><WalletLauncher /></>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
