@@ -1,0 +1,71 @@
+contradictions:
+  - id: PP-C-001
+    status: open
+    severity: high
+    type: product-definition
+    owner: product-truth-engine
+    statements:
+      - source: README.md
+        claim: PactPay is a Mini App for commissioning digital work through private projects and contributor tasks.
+      - source: docs/BRAND_SYSTEM.md and implemented frontend
+        claim: PactPay is a private coordination and settlement layer built around outcomes and private contributions.
+    resolution_required: Canonicalize the outcome/private-contribution definition and update README terminology.
+    blocks:
+      - canonical-product-truth
+      - release-documentation-integrity
+
+  - id: PP-C-002
+    status: open
+    severity: high
+    type: integrity-claim
+    owner: system-integrity-engine
+    statements:
+      - source: README.md
+        claim: Evidence commitments use SHA-256.
+      - source: src/lib/fingerprint.ts
+        claim: Terms and evidence use a custom deterministic multi-lane fingerprint function.
+    resolution_required: Remove SHA-256 claims or restore a browser-safe cryptographic implementation with versioned compatibility.
+    blocks:
+      - integrity-language
+      - security-claim-gate
+
+  - id: PP-C-003
+    status: open
+    severity: medium
+    type: navigation-projection
+    owner: experience-narrative-engine
+    statements:
+      - source: docs/BRAND_SYSTEM.md
+        claim: The product page system includes landing, demo, app, invite, response, receipt, and wallet surfaces.
+      - source: implemented frontend
+        claim: Coordinator outcome creation, outcome index, and contribution creation remain combined in one App surface.
+    resolution_required: Preserve the MVP workflow while separating logical page responsibilities or formalizing the workspace as one adaptive page.
+    blocks: []
+
+  - id: PP-C-004
+    status: open
+    severity: medium
+    type: trust-boundary
+    owner: system-integrity-engine
+    statements:
+      - source: product language
+        claim: Terms are frozen and fingerprinted.
+      - source: implementation
+        claim: Payloads are bearer-secret URL fragments and the current fingerprint is deterministic but not cryptographically authenticated.
+    resolution_required: Use precise language such as terms fingerprint or matched terms; do not imply tamper-proof cryptographic enforcement.
+    blocks:
+      - trust-copy-gate
+
+  - id: PP-C-005
+    status: open
+    severity: medium
+    type: release-state
+    owner: delivery-execution-engine
+    statements:
+      - source: live deployment
+        claim: PactPay is hosted through a temporary Cloudflare tunnel.
+      - source: submission requirement
+        claim: The Mini App requires a stable public HTTPS URL for durable listing and judging.
+    resolution_required: Move from temporary tunnel to a stable HTTPS deployment before final submission when possible.
+    blocks:
+      - stable-release-url
