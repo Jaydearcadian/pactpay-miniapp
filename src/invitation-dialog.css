@@ -1,0 +1,289 @@
+.invitationDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(242, 255, 99, 0.08), transparent 34rem),
+    rgba(5, 7, 6, 0.84);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.invitationDialog {
+  width: min(100%, 42rem);
+  max-height: min(90dvh, 48rem);
+  overflow-y: auto;
+  border: 1px solid rgba(242, 255, 99, 0.18);
+  border-radius: 1.75rem;
+  padding: clamp(1.2rem, 4vw, 2rem);
+  color: #191b19;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.44), transparent 34%),
+    #f2eee5;
+  box-shadow:
+    0 2.5rem 7rem rgba(0, 0, 0, 0.56),
+    inset 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.invitationDialogTopline,
+.invitationDialogActions,
+.invitationDialogBrand {
+  display: flex;
+  align-items: center;
+}
+
+.invitationDialogTopline {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.invitationDialogBrand {
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.invitationDialogMark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.8rem;
+  color: #090b0a;
+  background: #f2ff63;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 0.7rem 1.8rem rgba(122, 134, 36, 0.22);
+}
+
+.invitationDialogBrand div {
+  display: grid;
+  min-width: 0;
+}
+
+.invitationDialogBrand strong {
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.invitationDialogBrand small {
+  margin-top: 0.18rem;
+  color: #747168;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.invitationDialogClose {
+  min-height: 2.5rem;
+  border: 0;
+  padding: 0.5rem 0;
+  color: #555650;
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.invitationDialogIntro {
+  margin: clamp(2rem, 7vw, 3.5rem) 0 1.65rem;
+}
+
+.invitationDialogEyebrow {
+  margin: 0 0 0.72rem;
+  color: #6d7345;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.invitationDialogIntro h2 {
+  max-width: 11ch;
+  margin: 0;
+  color: #111310;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.3rem, 8vw, 4.7rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 0.92;
+}
+
+.invitationDialogIntro > p:last-child {
+  max-width: 34rem;
+  margin: 1.15rem 0 0;
+  color: #555650;
+  font-size: 0.98rem;
+  line-height: 1.58;
+}
+
+.invitationDialog form {
+  display: grid;
+}
+
+.invitationDialog label {
+  margin-bottom: 0.5rem;
+  color: #30322e;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.invitationDialog input {
+  width: 100%;
+  min-height: 3.55rem;
+  box-sizing: border-box;
+  border: 1px solid #cfcbc1;
+  border-radius: 0.9rem;
+  padding: 0 1rem;
+  color: #171916;
+  background: rgba(255, 255, 255, 0.56);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.invitationDialog input::placeholder {
+  color: #858279;
+}
+
+.invitationDialog input:focus {
+  border-color: #8b9435;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 0 4px rgba(139, 148, 53, 0.16);
+}
+
+.invitationDialog input[aria-invalid='true'] {
+  border-color: #8b3026;
+}
+
+.invitationDialogError {
+  margin: 0.55rem 0 0;
+  color: #8b3026;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.invitationDialogTrust {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  border: 1px solid rgba(25, 27, 25, 0.08);
+  border-radius: 0.9rem;
+  padding: 0.95rem;
+  color: #555650;
+  background: rgba(25, 27, 25, 0.055);
+}
+
+.invitationDialogTrust > span {
+  color: #8d9636;
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+
+.invitationDialogTrust p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.invitationDialogTrust strong {
+  color: #252724;
+}
+
+.invitationDialogActions {
+  gap: 0.7rem;
+  margin-top: 1.25rem;
+}
+
+.invitationDialogPrimary,
+.invitationDialogSecondary {
+  min-height: 3.2rem;
+  border-radius: 999px;
+  padding: 0 1.25rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.invitationDialogPrimary {
+  flex: 1 1 auto;
+  border: 1px solid #bac33e;
+  color: #090b0a;
+  background: #f2ff63;
+  box-shadow: 0 0.9rem 2rem rgba(122, 134, 36, 0.2);
+}
+
+.invitationDialogSecondary {
+  flex: 0 0 auto;
+  border: 1px solid #cfcbc1;
+  color: #353733;
+  background: transparent;
+}
+
+.invitationDialogPrimary:focus-visible,
+.invitationDialogSecondary:focus-visible,
+.invitationDialogClose:focus-visible {
+  outline: 3px solid rgba(44, 152, 177, 0.65);
+  outline-offset: 3px;
+}
+
+@media (max-width: 540px) {
+  .invitationDialogBackdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .invitationDialog {
+    width: 100%;
+    max-height: 94dvh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 1.5rem 1.5rem 0 0;
+    padding: 1.2rem 1rem calc(1.15rem + env(safe-area-inset-bottom));
+  }
+
+  .invitationDialogIntro {
+    margin-top: 2.35rem;
+  }
+
+  .invitationDialogIntro h2 {
+    font-size: clamp(2.55rem, 13vw, 3.65rem);
+  }
+
+  .invitationDialogActions {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .invitationDialogPrimary,
+  .invitationDialogSecondary {
+    width: 100%;
+    min-height: 3.45rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .invitationDialogBackdrop {
+    animation: invitationBackdropIn 180ms ease-out both;
+  }
+
+  .invitationDialog {
+    animation: invitationDialogIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes invitationBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes invitationDialogIn {
+  from { opacity: 0; transform: translateY(1.2rem) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
