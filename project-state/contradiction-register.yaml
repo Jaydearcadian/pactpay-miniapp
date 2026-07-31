@@ -1,0 +1,93 @@
+contradictions:
+  - id: PP-C-001
+    status: resolved
+    resolved_at: 2026-07-31
+    severity: high
+    type: product-definition
+    owner: product-truth-engine
+    statements:
+      - source: previous README.md
+        claim: PactPay was described as a Mini App for commissioning digital work through private projects and contributor tasks.
+      - source: docs/BRAND_SYSTEM.md and implemented frontend
+        claim: PactPay is a private coordination and settlement layer built around outcomes and private contributions.
+    resolution:
+      summary: README terminology now uses Outcome, Private Contribution, Evidence, and NIM Settlement.
+      artifact: README.md
+      commit: b5df0182e13352da6fd5518a8fe695e026f0c08a
+    blocks: []
+
+  - id: PP-C-002
+    status: resolved
+    resolved_at: 2026-07-31
+    severity: high
+    type: integrity-claim
+    owner: system-integrity-engine
+    statements:
+      - source: previous README.md
+        claim: Evidence commitments used SHA-256.
+      - source: src/lib/fingerprint.ts
+        claim: Terms and evidence use a custom deterministic multi-lane fingerprint function.
+    resolution:
+      summary: The SHA-256 claim was removed. Documentation now states that the current fingerprint is deterministic and is not cryptographic authentication or tamper-proof enforcement.
+      artifact: README.md
+      commit: b5df0182e13352da6fd5518a8fe695e026f0c08a
+    blocks: []
+
+  - id: PP-C-003
+    status: resolved-for-mvp
+    resolved_at: 2026-07-31
+    severity: medium
+    type: navigation-projection
+    owner: experience-narrative-engine
+    statements:
+      - source: project-state/experience/complete-product-surface.md
+        claim: Outcome index, outcome workspace, contribution composer, and contribution detail are separate logical responsibilities.
+      - source: implemented frontend
+        claim: Those responsibilities remain combined in one adaptive coordinator workspace.
+    resolution:
+      summary: The competition implementation formally treats /app as one adaptive coordinator shell. Full logical route separation remains a post-submission implementation handoff rather than a release blocker.
+    blocks: []
+
+  - id: PP-C-004
+    status: partially-resolved
+    severity: medium
+    type: trust-boundary
+    owner: system-integrity-engine
+    statements:
+      - source: product language
+        claim: Some current interface copy still says terms are frozen.
+      - source: implementation
+        claim: Payloads are bearer-secret URL fragments and the current fingerprint is deterministic but not cryptographically authenticated.
+    resolution:
+      summary: Canonical documentation now uses precise fingerprint and matching language. Remaining interface strings must be changed from absolute freeze language to terms fingerprint created or returned terms matched.
+    resolution_required: Update remaining interface copy and re-run the trust-copy gate.
+    blocks:
+      - trust-copy-gate
+
+  - id: PP-C-005
+    status: open
+    severity: medium
+    type: release-state
+    owner: delivery-execution-engine
+    statements:
+      - source: live deployment
+        claim: PactPay is hosted through a temporary Cloudflare tunnel.
+      - source: submission requirement
+        claim: The Mini App requires a stable public HTTPS URL for durable listing and judging.
+    resolution_required: Move from temporary tunnel to a stable HTTPS deployment before final submission when possible.
+    blocks:
+      - stable-release-url
+
+  - id: PP-C-006
+    status: open
+    severity: high
+    type: runtime-verification
+    owner: delivery-execution-engine
+    statements:
+      - source: implemented vertical slice
+        claim: The complete flow supports invitation, contributor response, NIM approval, and settlement receipt.
+      - source: current evidence
+        claim: Wallet connection and invitation opening are verified, but one complete 0.01 NIM settlement-to-receipt run has not yet been recorded.
+    resolution_required: Complete and record one end-to-end settlement test on the deployed HTTPS build.
+    blocks:
+      - release-gate
