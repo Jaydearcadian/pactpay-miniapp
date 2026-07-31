@@ -27,6 +27,7 @@ contract PactPayEscrow {
         address resolver;
         address token;
         uint256 amount;
+        uint64 acceptanceDeadline;
         uint64 deliveryDeadline;
         uint32 reviewPeriod;
     }
@@ -40,6 +41,7 @@ contract PactPayEscrow {
         address resolver;
         address token;
         uint256 amount;
+        uint64 acceptanceDeadline;
         uint64 deliveryDeadline;
         uint64 submittedAt;
         uint32 reviewPeriod;
@@ -77,6 +79,7 @@ contract PactPayEscrow {
         bytes32 indexed contributionId,
         bytes32 indexed termsHash,
         address indexed resolver,
+        uint64 acceptanceDeadline,
         uint64 deliveryDeadline,
         uint32 reviewPeriod
     );
@@ -114,7 +117,9 @@ contract PactPayEscrow {
         }
 
         if (params.amount == 0) revert InvalidAmount();
-        if (params.deliveryDeadline <= block.timestamp) revert InvalidDeadline();
+        if (params.acceptanceDeadline <= block.timestamp || params.deliveryDeadline <= params.acceptanceDeadline) {
+            revert InvalidDeadline();
+        }
         if (params.reviewPeriod < 1 hours || params.reviewPeriod > 30 days) revert InvalidReviewPeriod();
         if (_contributions[params.contributionId].status != Status.None) revert ContributionExists();
 
@@ -127,6 +132,7 @@ contract PactPayEscrow {
             resolver: params.resolver,
             token: params.token,
             amount: params.amount,
+            acceptanceDeadline: params.acceptanceDeadline,
             deliveryDeadline: params.deliveryDeadline,
             submittedAt: 0,
             reviewPeriod: params.reviewPeriod,
@@ -146,7 +152,12 @@ contract PactPayEscrow {
             params.contributionId, params.outcomeId, msg.sender, params.contributor, params.token, params.amount
         );
         emit ContributionPolicyCommitted(
-            params.contributionId, params.termsHash, params.resolver, params.deliveryDeadline, params.reviewPeriod
+            params.contributionId,
+            params.termsHash,
+            params.resolver,
+            params.acceptanceDeadline,
+            params.deliveryDeadline,
+            params.reviewPeriod
         );
     }
 
@@ -154,7 +165,7 @@ contract PactPayEscrow {
         Contribution storage contribution = _get(contributionId);
         _requireStatus(contribution, Status.Funded);
         if (msg.sender != contribution.contributor) revert Unauthorized();
-        if (block.timestamp > contribution.deliveryDeadline) revert DeadlinePassed();
+        if (block.timestamp > contribution.acceptanceDeadline) revert DeadlinePassed();
         if (acceptedTermsHash != contribution.termsHash) revert InvalidEvidence();
 
         contribution.status = Status.Accepted;
@@ -242,7 +253,7 @@ contract PactPayEscrow {
         Contribution storage contribution = _get(contributionId);
         _requireStatus(contribution, Status.Funded);
         if (msg.sender != contribution.coordinator) revert Unauthorized();
-        if (block.timestamp <= contribution.deliveryDeadline) revert DeadlineNotReached();
+        if (block.timestamp <= contribution.acceptanceDeadline) revert DeadlineNotReached();
         _refund(contributionId, contribution);
     }
 

@@ -1,8 +1,8 @@
 {
   "network": "sepolia",
   "chainId": 11155111,
-  "deploymentBlock": 11384438,
-  "sourceCommit": "cee7328ff9ee1a5df0115863bcffc3d2c0423861",
+  "deploymentBlock": 11387998,
+  "sourceCommit": "27cc408b4e5cd0e8e35cc5c3d1b1ef8b68754505",
   "deployer": "0x1CB62f07FEb12cBAba8338B3415A962B9520C8b3",
   "contracts": {
     "PactPayDemoUSDC": {
@@ -11,11 +11,19 @@
       "name": "PactPay Demo USDC",
       "symbol": "pUSDC",
       "decimals": 6,
-      "initialSupply": "1000000000000"
+      "initialSupply": "1000000000000",
+      "reusedForCurrentEscrow": true
     },
     "PactPayEscrow": {
-      "address": "0x8dd98bDFa3914Ef5F213dFd92679F587B88D51B6",
-      "transactionHash": "0x461f1b3355bbc80a5612900a36ec370889c2ab7b4a1432981c9b3312cf4ff8ee"
+      "address": "0x3F7fc504AC9096C2fFb28ef32D85d08B1034f3a6",
+      "transactionHash": "0x15c7bbc944af78e9bc8919a2bd9ae0cdcc2a9a5b6e7813fb0639050d29b2bedd",
+      "deadlineModel": "separate-acceptance-and-delivery",
+      "runtimeSizeBytes": 6828,
+      "previousDeployment": {
+        "address": "0x8dd98bDFa3914Ef5F213dFd92679F587B88D51B6",
+        "transactionHash": "0x461f1b3355bbc80a5612900a36ec370889c2ab7b4a1432981c9b3312cf4ff8ee",
+        "deadlineModel": "single-delivery-deadline"
+      }
     }
   }
 }
