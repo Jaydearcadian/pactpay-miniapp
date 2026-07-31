@@ -8,6 +8,7 @@ import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
 import { WalletLauncher, WalletPage } from './app/WalletPage';
 import { installShareFallback } from './lib/shareFallback';
 import './styles.css';
+import './landing.css';
 
 installShareFallback();
 
