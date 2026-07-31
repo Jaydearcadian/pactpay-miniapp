@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './app/App';
+import { DemoPage } from './app/DemoPage';
 import { LandingPage } from './app/LandingPage';
 import { ResponseApp } from './app/ResponseApp';
 import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
@@ -9,6 +10,8 @@ import { WalletLauncher, WalletPage } from './app/WalletPage';
 import { installShareFallback } from './lib/shareFallback';
 import './styles.css';
 import './landing.css';
+import './demo.css';
+import './feedback.css';
 
 installShareFallback();
 
@@ -24,6 +27,7 @@ function RootRouter() {
 
   if (hash.startsWith('#/response/')) return <ResponseApp />;
   if (hash === '#/wallet') return <WalletPage />;
+  if (hash === '#/demo') return <DemoPage />;
   if (hash === '#/app') return <><App /><WalletLauncher /></>;
   if (hash.startsWith('#/invite/') || hash.startsWith('#/receipt/')) return <App />;
 
