@@ -12,6 +12,19 @@ export type EvidenceRecord = {
   submittedAt: string;
 };
 
+export type AcceptanceRecord = {
+  version: 1;
+  network: 'nimiq';
+  contributionId: string;
+  outcomeId: string;
+  termsHash: string;
+  contributorAddress: string;
+  acceptedAt: string;
+  message: string;
+  publicKey: string;
+  signature: string;
+};
+
 export type SettlementReceipt = {
   transactionHash: string;
   settledAt: string;
@@ -33,6 +46,7 @@ export type Contribution = {
   contributorLabel?: string;
   contributorAddress?: string;
   acceptedAt?: string;
+  acceptance?: AcceptanceRecord;
   evidence?: EvidenceRecord;
   receipt?: SettlementReceipt;
 };
