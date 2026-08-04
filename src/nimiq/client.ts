@@ -1,4 +1,5 @@
 import { init } from '@nimiq/mini-app-sdk';
+import { buildAcceptanceMessage, type AcceptanceRecord } from './acceptance';
 
 const SESSION_KEY = 'pactpay-nimiq-account';
 
@@ -12,6 +13,23 @@ function providerErrorMessage(value: unknown): string {
   return 'Nimiq Pay returned an unexpected response.';
 }
 
+async function getNimiqProvider() {
+  try {
+    return await init({ timeout: 10_000 });
+  } catch {
+    throw new Error('Open PactPay inside Nimiq Pay to use the wallet. A normal browser does not provide Nimiq wallet access.');
+  }
+}
+
+function rememberAccount(account: string): void {
+  try {
+    sessionStorage.setItem(SESSION_KEY, account);
+    window.dispatchEvent(new CustomEvent('pactpay:wallet-connected', { detail: account }));
+  } catch {
+    // The account remains usable for the current action.
+  }
+}
+
 export function getConnectedNimiqAccount(): string {
   try {
     return sessionStorage.getItem(SESSION_KEY) ?? '';
@@ -21,26 +39,56 @@ export function getConnectedNimiqAccount(): string {
 }
 
 export async function connectNimiq(): Promise<string> {
-  let nimiq;
-  try {
-    nimiq = await init({ timeout: 10_000 });
-  } catch {
-    throw new Error('Open PactPay inside Nimiq Pay to connect a wallet. The normal browser does not provide wallet access.');
-  }
-
+  const nimiq = await getNimiqProvider();
   const response = await nimiq.listAccounts();
   if (!Array.isArray(response)) throw new Error(providerErrorMessage(response));
+
   const account = response[0];
   if (typeof account !== 'string' || !account) throw new Error('No Nimiq account was selected.');
+  rememberAccount(account);
+  return account;
+}
 
-  try {
-    sessionStorage.setItem(SESSION_KEY, account);
-    window.dispatchEvent(new CustomEvent('pactpay:wallet-connected', { detail: account }));
-  } catch {
-    // The connection still remains usable for the current action.
+export async function signContributionAcceptance(input: {
+  contributionId: string;
+  outcomeId: string;
+  termsHash: string;
+}): Promise<AcceptanceRecord> {
+  const nimiq = await getNimiqProvider();
+  const accounts = await nimiq.listAccounts();
+  if (!Array.isArray(accounts)) throw new Error(providerErrorMessage(accounts));
+
+  const contributorAddress = accounts[0];
+  if (typeof contributorAddress !== 'string' || !contributorAddress) {
+    throw new Error('No Nimiq account was selected for this acceptance.');
   }
 
-  return account;
+  const acceptedAt = new Date().toISOString();
+  const intent = {
+    contributionId: input.contributionId,
+    outcomeId: input.outcomeId,
+    termsHash: input.termsHash,
+    contributorAddress,
+    acceptedAt,
+  };
+  const message = buildAcceptanceMessage(intent);
+  const signed = await nimiq.sign(message);
+
+  if (!signed || typeof signed !== 'object') throw new Error(providerErrorMessage(signed));
+  const { publicKey, signature } = signed as { publicKey?: unknown; signature?: unknown };
+  if (typeof publicKey !== 'string' || !publicKey || typeof signature !== 'string' || !signature) {
+    throw new Error('Nimiq Pay did not return a valid acceptance signature.');
+  }
+
+  rememberAccount(contributorAddress);
+  return {
+    version: 1,
+    network: 'nimiq',
+    ...intent,
+    message,
+    publicKey,
+    signature,
+  };
 }
 
 export async function sendNim(input: {
@@ -52,13 +100,7 @@ export async function sendNim(input: {
   if (!input.recipient.trim()) throw new Error('A contributor Nimiq address is required.');
   if (!Number.isFinite(input.amountNim) || input.amountNim <= 0) throw new Error('The NIM amount must be greater than zero.');
 
-  let nimiq;
-  try {
-    nimiq = await init({ timeout: 10_000 });
-  } catch {
-    throw new Error('Open PactPay inside Nimiq Pay to approve this settlement.');
-  }
-
+  const nimiq = await getNimiqProvider();
   const data = `PACTPAY|${input.contributionId.slice(0, 8)}|${input.evidenceHash.slice(0, 20)}`.slice(0, 64);
   const response = await nimiq.sendBasicTransactionWithData({
     recipient: input.recipient.trim(),
