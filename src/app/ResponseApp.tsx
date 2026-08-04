@@ -3,6 +3,7 @@ import type { Contribution, Outcome, PactPayState } from '../domain/model';
 import { transitionContribution } from '../domain/lifecycle';
 import { decodePayload, encodePayload, type ReceiptPayload, type ResponsePayload } from '../handoff/payload';
 import { fingerprintEvidence } from '../lib/fingerprint';
+import { assertAcceptanceRecordMatches } from '../nimiq/acceptance';
 import { sendNim } from '../nimiq/client';
 import { loadState, saveState } from '../storage/repository';
 
@@ -62,8 +63,16 @@ export function ResponseApp() {
           throw new Error('Open this response on the coordinator device that created the original contribution.');
         }
         if (original.termsHash !== response.termsHash) {
-          throw new Error('The returned terms do not match the frozen contribution.');
+          throw new Error('The returned terms do not match the original contribution fingerprint.');
         }
+
+        const acceptance = assertAcceptanceRecordMatches(response.acceptance, {
+          contributionId: response.contributionId,
+          outcomeId: response.outcomeId,
+          termsHash: response.termsHash,
+          contributorAddress: response.contributorAddress,
+          acceptedAt: response.acceptedAt,
+        });
 
         const expectedEvidenceHash = await fingerprintEvidence({
           contributionId: response.contributionId,
@@ -88,11 +97,13 @@ export function ResponseApp() {
           ? transitionContribution(original, 'accepted', {
               contributorAddress: response.contributorAddress,
               acceptedAt: response.acceptedAt,
+              acceptance,
             })
           : {
               ...original,
               contributorAddress: response.contributorAddress,
               acceptedAt: response.acceptedAt,
+              acceptance,
             };
 
         const submitted = accepted.status === 'accepted'
@@ -118,6 +129,10 @@ export function ResponseApp() {
   async function settle(outcome: Outcome, contribution: Contribution) {
     if (contribution.status !== 'submitted' || !contribution.evidence || !contribution.contributorAddress) {
       setMessage('This contribution is not ready for settlement.');
+      return;
+    }
+    if (!contribution.acceptance) {
+      setMessage('This contribution is missing its signed acceptance record.');
       return;
     }
     if (contribution.receipt) {
@@ -181,7 +196,7 @@ export function ResponseApp() {
       <article className="sheet inviteSheet invalid">
         <p className="eyebrow">VERIFYING RESPONSE</p>
         <h1>Checking the private contribution.</h1>
-        <p>PactPay is matching the contribution, frozen terms, recipient, and evidence fingerprint.</p>
+        <p>PactPay is matching the original contribution, signed acceptance fields, recipient, and evidence fingerprint.</p>
       </article>
     </section>}
 
@@ -196,14 +211,21 @@ export function ResponseApp() {
 
     {review.kind === 'ready' && <section className="inviteWrap">
       <article className="sheet inviteSheet">
-        <p className="eyebrow">CONTRIBUTION RECEIVED</p>
+        <p className="eyebrow">SIGNED CONTRIBUTION RECEIVED</p>
         <h1>{review.contribution.role}</h1>
         <div className="verification">
           <span>✓ Contribution matched</span>
-          <span>✓ Frozen terms matched</span>
-          <span>✓ Recipient included</span>
+          <span>✓ Terms fingerprint matched</span>
+          <span>✓ Signed acceptance fields matched</span>
           <span>✓ Evidence fingerprint verified</span>
         </div>
+        <section>
+          <h2>Signed acceptance</h2>
+          <p>The contributor approved a canonical PactPay acceptance message through Nimiq Pay.</p>
+          <small>Address: {short(review.contribution.acceptance?.contributorAddress ?? '')}</small><br />
+          <small>Public key: {short(review.contribution.acceptance?.publicKey ?? '')}</small><br />
+          <small>Signature: {short(review.contribution.acceptance?.signature ?? '')}</small>
+        </section>
         <section>
           <h2>Evidence</h2>
           <a href={review.contribution.evidence?.link} target="_blank" rel="noreferrer">
@@ -233,6 +255,6 @@ export function ResponseApp() {
       </article>
     </section>}
 
-    <footer><strong>PactPay</strong><span>Clear terms. Private fulfilment. Verifiable NIM settlement.</span></footer>
+    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Verifiable NIM settlement.</span></footer>
   </main>;
 }
