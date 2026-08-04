@@ -26,7 +26,7 @@ export type ResponsePayload = {
   termsHash: string;
   contributorAddress: string;
   acceptedAt: string;
-  acceptance: AcceptanceRecord;
+  acceptance?: AcceptanceRecord;
   evidence: EvidenceRecord;
 };
 
