@@ -1,4 +1,4 @@
-import type { Contribution, EvidenceRecord } from '../domain/model';
+import type { AcceptanceRecord, Contribution, EvidenceRecord } from '../domain/model';
 
 export type InvitePayload = {
   version: 1;
@@ -26,6 +26,7 @@ export type ResponsePayload = {
   termsHash: string;
   contributorAddress: string;
   acceptedAt: string;
+  acceptance: AcceptanceRecord;
   evidence: EvidenceRecord;
 };
 
