@@ -1,5 +1,6 @@
 import { init } from '@nimiq/mini-app-sdk';
-import { buildAcceptanceMessage, type AcceptanceRecord } from './acceptance';
+import type { AcceptanceRecord } from '../domain/model';
+import { buildAcceptanceMessage } from './acceptance';
 
 const SESSION_KEY = 'pactpay-nimiq-account';
 
