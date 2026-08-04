@@ -1,15 +1,4 @@
-export type AcceptanceRecord = {
-  version: 1;
-  network: 'nimiq';
-  contributionId: string;
-  outcomeId: string;
-  termsHash: string;
-  contributorAddress: string;
-  acceptedAt: string;
-  message: string;
-  publicKey: string;
-  signature: string;
-};
+import type { AcceptanceRecord } from '../domain/model';
 
 export type AcceptanceIntent = Pick<
   AcceptanceRecord,
@@ -37,7 +26,7 @@ export function buildAcceptanceMessage(intent: AcceptanceIntent): string {
 
   return [
     'PACTPAY_ACCEPTANCE_V1',
-    `network=nimiq`,
+    'network=nimiq',
     `contributionId=${intent.contributionId}`,
     `outcomeId=${intent.outcomeId}`,
     `termsHash=${intent.termsHash}`,
