@@ -7,6 +7,7 @@ import { InvitationDialog } from './app/InvitationDialog';
 import { InvitationEntryPage } from './app/InvitationEntryPage';
 import { LandingPage } from './app/LandingPage';
 import { ResponseApp } from './app/ResponseApp';
+import { SignedInviteRoom } from './app/SignedInviteRoom';
 import { useOutcomeFormFocus } from './app/useOutcomeFormFocus';
 import { useProductCopyRefinement } from './app/useProductCopyRefinement';
 import { WalletLauncher, WalletPage } from './app/WalletPage';
@@ -36,12 +37,14 @@ function RootRouter() {
   }, []);
 
   let page: React.ReactNode;
+  const inviteMatch = hash.match(/^#\/invite\/(.+)$/u);
   if (hash.startsWith('#/response/')) page = <ResponseApp />;
+  else if (inviteMatch) page = <SignedInviteRoom payload={inviteMatch[1]} />;
   else if (hash === '#/wallet') page = <WalletPage />;
   else if (hash === '#/demo') page = <DemoPage />;
   else if (hash === '#/open-invitation') page = <InvitationEntryPage />;
   else if (hash === '#/app') page = <><App /><WalletLauncher /></>;
-  else if (hash.startsWith('#/invite/') || hash.startsWith('#/receipt/')) page = <App />;
+  else if (hash.startsWith('#/receipt/')) page = <App />;
   else page = <LandingPage />;
 
   return <>{page}<InvitationDialog /></>;
