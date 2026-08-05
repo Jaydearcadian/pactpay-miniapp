@@ -40,9 +40,11 @@ function persistReceipt(receipt: BoundReceiptPayload): void {
     if (outcome.id !== receipt.outcomeId) return outcome;
     const contributions = outcome.contributions.map((contribution) => {
       if (contribution.id !== receipt.contributionId || !contribution.receipt) return contribution;
+      if (contribution.receipt.transactionHash !== receipt.transactionHash) return contribution;
       changed = true;
       return {
         ...contribution,
+        status: receipt.settlementState === 'confirmed' ? 'settled' as const : 'payment-broadcast' as const,
         receipt: {
           ...contribution.receipt,
           settlementState: receipt.settlementState,
@@ -109,7 +111,7 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
         verificationError: nextResult.error,
         ...(nextResult.state === 'confirmed'
           ? {
-              confirmedAt: nextResult.checkedAt,
+              confirmedAt: nextResult.verification.checkedAt,
               confirmedBlockHeight: nextResult.verification.blockHeight,
             }
           : {}),
@@ -120,7 +122,7 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
       setRpcError(message);
       store({
         ...receipt,
-        settlementState: 'verification-failed',
+        settlementState: 'confirming',
         verificationError: message,
       });
     } finally {
@@ -164,13 +166,12 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
 
         {checking && <div className="nextAction"><span>VERIFICATION STATE</span><strong>Checking Nimiq transaction inclusion and settlement fields…</strong></div>}
         {!checking && rpcError && <div className="nextAction"><span>VERIFICATION UNAVAILABLE</span><strong>{rpcError}</strong></div>}
-        {!checking && pending && <div className="nextAction"><span>AWAITING CONFIRMATION</span><strong>{receipt.verification?.transactionFound ? 'Transaction found but not yet included.' : 'Transaction is not indexed yet.'}</strong></div>}
+        {!checking && pending && !rpcError && <div className="nextAction"><span>AWAITING CONFIRMATION</span><strong>{receipt.verification?.transactionFound ? 'Transaction found but not yet included.' : 'Transaction is not indexed yet.'}</strong></div>}
         {!checking && failed && <div className="nextAction"><span>VERIFICATION FAILED</span><strong>{receipt.verificationError}</strong></div>}
 
         {receipt.verification && <div className="verification">
           <span>{receipt.verification.transactionFound ? '✓' : '○'} Transaction found</span>
           <span>{receipt.verification.included ? '✓' : '○'} Included on Nimiq</span>
-          <span>{receipt.verification.hashMatches ? '✓' : '×'} Transaction hash matched</span>
           <span>{receipt.verification.recipientMatches ? '✓' : '×'} Recipient matched</span>
           <span>{receipt.verification.amountMatches ? '✓' : '×'} Amount matched</span>
           <span>{receipt.verification.dataMatches ? '✓' : '×'} PP1 reference matched</span>
