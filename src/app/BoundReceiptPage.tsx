@@ -111,7 +111,7 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
         verificationError: nextResult.error,
         ...(nextResult.state === 'confirmed'
           ? {
-              confirmedAt: nextResult.verification.checkedAt,
+              confirmedAt: nextResult.checkedAt,
               confirmedBlockHeight: nextResult.verification.blockHeight,
             }
           : {}),
