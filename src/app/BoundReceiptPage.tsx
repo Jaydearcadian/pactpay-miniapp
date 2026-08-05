@@ -1,4 +1,5 @@
 import { decodePayload, type ReceiptPayload } from '../handoff/payload';
+import { assertReceiptTransactionData } from '../settlement/receipt';
 
 function receiptPayloadFromHash(): string {
   const match = window.location.hash.match(/^#\/receipt\/(.+)$/u);
@@ -23,6 +24,8 @@ export function BoundReceiptPage() {
   try {
     const decoded = decodePayload(receiptPayloadFromHash());
     if (decoded.kind !== 'receipt') throw new Error('This is not a settlement receipt.');
+    if (decoded.settlementState !== 'broadcast') throw new Error('This receipt has an unsupported settlement state.');
+    assertReceiptTransactionData(decoded.receiptId, decoded.transactionData);
     receipt = decoded;
   } catch (error) {
     return <main className="appShell">
