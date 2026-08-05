@@ -17,9 +17,10 @@ export type AcceptanceVerification = {
   messageMatches: boolean;
   signatureValid: boolean;
   addressMatchesPublicKey: boolean;
+  derivedAddress: string;
   canonicalMessageHash: string;
   signingSemantics: 'raw-message' | 'nimiq-prefixed-sha256';
-  verifier: 'nimiq-rpc';
+  verifier: 'nimiq-rpc+core-address-v1';
   verifiedAt: string;
 };
 
