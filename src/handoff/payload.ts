@@ -30,27 +30,41 @@ export type ResponsePayload = {
   evidence: EvidenceRecord;
 };
 
-export type ReceiptPayload = {
+export type LegacyReceiptPayload = {
   version: 1;
   kind: 'receipt';
   contributionId: string;
-  outcomeId: string;
   outcomeLabel: string;
   role: string;
-  termsHash: string;
-  acceptanceSignature: string;
   amountNim: number;
-  amountLuna: number;
   recipient: string;
   evidenceHash: string;
-  receiptId: string;
-  transactionData: string;
   transactionHash: string;
-  settlementState: 'broadcast';
   settledAt: string;
 };
 
+export type BoundReceiptPayload = LegacyReceiptPayload & {
+  outcomeId: string;
+  termsHash: string;
+  acceptanceSignature: string;
+  amountLuna: number;
+  receiptId: string;
+  transactionData: string;
+  settlementState: 'broadcast';
+};
+
+export type ReceiptPayload = LegacyReceiptPayload | BoundReceiptPayload;
 export type HandoffPayload = InvitePayload | ResponsePayload | ReceiptPayload;
+
+export function isBoundReceiptPayload(payload: ReceiptPayload): payload is BoundReceiptPayload {
+  return 'receiptId' in payload
+    && 'transactionData' in payload
+    && 'amountLuna' in payload
+    && 'termsHash' in payload
+    && 'acceptanceSignature' in payload
+    && 'outcomeId' in payload
+    && payload.settlementState === 'broadcast';
+}
 
 function toBase64Url(value: string): string {
   const bytes = new TextEncoder().encode(value);
