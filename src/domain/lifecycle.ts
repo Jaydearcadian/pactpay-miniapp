@@ -15,9 +15,13 @@ export function canTransition(from: ContributionStatus, to: ContributionStatus):
 
 export function transitionContribution(
   contribution: Contribution,
-  nextStatus: ContributionStatus,
+  requestedStatus: ContributionStatus,
   patch: Partial<Contribution> = {},
 ): Contribution {
+  const nextStatus = requestedStatus === 'settled' && patch.receipt?.settlementState === 'broadcast'
+    ? 'payment-broadcast'
+    : requestedStatus;
+
   if (!canTransition(contribution.status, nextStatus)) {
     throw new Error(`Cannot move contribution from ${contribution.status} to ${nextStatus}.`);
   }
