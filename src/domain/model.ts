@@ -25,6 +25,22 @@ export type AcceptanceRecord = {
   signature: string;
 };
 
+export type SettlementState =
+  | 'broadcast'
+  | 'confirming'
+  | 'confirmed'
+  | 'verification-failed';
+
+export type SettlementVerification = {
+  transactionFound: boolean;
+  included: boolean;
+  hashMatches: boolean;
+  recipientMatches: boolean;
+  amountMatches: boolean;
+  dataMatches: boolean;
+  blockHeight?: number;
+};
+
 export type SettlementReceipt = {
   transactionHash: string;
   settledAt: string;
@@ -33,8 +49,12 @@ export type SettlementReceipt = {
   version?: 1;
   receiptId?: string;
   transactionData?: string;
-  settlementState?: 'broadcast';
+  settlementState?: SettlementState;
   amountLuna?: number;
+  confirmedAt?: string;
+  confirmedBlockHeight?: number;
+  verification?: SettlementVerification;
+  verificationError?: string;
 };
 
 export type Contribution = {
