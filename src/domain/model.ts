@@ -13,6 +13,16 @@ export type EvidenceRecord = {
   submittedAt: string;
 };
 
+export type AcceptanceVerification = {
+  messageMatches: boolean;
+  signatureValid: boolean;
+  addressMatchesPublicKey: boolean;
+  canonicalMessageHash: string;
+  signingSemantics: 'raw-message' | 'nimiq-prefixed-sha256';
+  verifier: 'nimiq-rpc';
+  verifiedAt: string;
+};
+
 export type AcceptanceRecord = {
   version: 1;
   network: 'nimiq';
@@ -24,6 +34,7 @@ export type AcceptanceRecord = {
   message: string;
   publicKey: string;
   signature: string;
+  verification?: AcceptanceVerification;
 };
 
 export type SettlementState =
