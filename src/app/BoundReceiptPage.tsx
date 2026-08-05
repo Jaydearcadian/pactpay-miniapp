@@ -1,4 +1,4 @@
-import { decodePayload, type ReceiptPayload } from '../handoff/payload';
+import { decodePayload, isBoundReceiptPayload, type BoundReceiptPayload } from '../handoff/payload';
 import { assertReceiptTransactionData } from '../settlement/receipt';
 
 function receiptPayloadFromHash(): string {
@@ -15,16 +15,18 @@ function short(value: string): string {
   return value.length > 22 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value;
 }
 
-async function copyReceipt(receipt: ReceiptPayload): Promise<void> {
+async function copyReceipt(receipt: BoundReceiptPayload): Promise<void> {
   await navigator.clipboard.writeText(JSON.stringify(receipt, null, 2));
 }
 
 export function BoundReceiptPage() {
-  let receipt: ReceiptPayload;
+  let receipt: BoundReceiptPayload;
   try {
     const decoded = decodePayload(receiptPayloadFromHash());
     if (decoded.kind !== 'receipt') throw new Error('This is not a settlement receipt.');
-    if (decoded.settlementState !== 'broadcast') throw new Error('This receipt has an unsupported settlement state.');
+    if (!isBoundReceiptPayload(decoded)) {
+      throw new Error('This legacy receipt does not contain a PactPay transaction binding.');
+    }
     assertReceiptTransactionData(decoded.receiptId, decoded.transactionData);
     receipt = decoded;
   } catch (error) {
