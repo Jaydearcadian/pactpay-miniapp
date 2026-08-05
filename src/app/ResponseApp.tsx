@@ -4,6 +4,7 @@ import { transitionContribution } from '../domain/lifecycle';
 import { decodePayload, encodePayload, type ReceiptPayload, type ResponsePayload } from '../handoff/payload';
 import { fingerprintEvidence } from '../lib/fingerprint';
 import { assertAcceptanceRecordMatches } from '../nimiq/acceptance';
+import { verifyAcceptanceProof } from '../nimiq/acceptanceProof';
 import { sendNim } from '../nimiq/client';
 import { createReceiptBinding } from '../settlement/receipt';
 import { loadState, saveState } from '../storage/repository';
@@ -75,13 +76,15 @@ export function ResponseApp() {
           throw new Error('This contribution was never issued as a private invitation.');
         }
 
-        const acceptance = assertAcceptanceRecordMatches(response.acceptance, {
+        const expectedAcceptance = {
           contributionId: response.contributionId,
           outcomeId: response.outcomeId,
           termsHash: response.termsHash,
           contributorAddress: response.contributorAddress,
           acceptedAt: response.acceptedAt,
-        });
+        };
+        const matchedAcceptance = assertAcceptanceRecordMatches(response.acceptance, expectedAcceptance);
+        const acceptance = await verifyAcceptanceProof(matchedAcceptance, expectedAcceptance);
 
         const expectedEvidenceHash = await fingerprintEvidence({
           contributionId: response.contributionId,
@@ -132,8 +135,10 @@ export function ResponseApp() {
       setMessage('This contribution is not ready for settlement.');
       return;
     }
-    if (!contribution.acceptance) {
-      setMessage('This contribution is missing its signed acceptance record.');
+    const acceptance = contribution.acceptance;
+    const proof = acceptance?.verification;
+    if (!acceptance || !proof?.messageMatches || !proof.signatureValid || !proof.addressMatchesPublicKey) {
+      setMessage('This contribution does not have a valid cryptographic acceptance proof.');
       return;
     }
     if (contribution.receipt) {
@@ -148,7 +153,7 @@ export function ResponseApp() {
         contributionId: contribution.id,
         outcomeId: contribution.outcomeId,
         termsHash: contribution.termsHash,
-        acceptance: contribution.acceptance,
+        acceptance,
         evidenceHash: contribution.evidence.hash,
         recipient: contribution.contributorAddress,
         amountNim: contribution.amountNim,
@@ -186,7 +191,9 @@ export function ResponseApp() {
         outcomeLabel: outcome.privateLabel,
         role: contribution.role,
         termsHash: contribution.termsHash,
-        acceptanceSignature: contribution.acceptance.signature,
+        acceptanceSignature: acceptance.signature,
+        acceptancePublicKey: acceptance.publicKey,
+        acceptanceVerification: proof,
         amountNim: contribution.amountNim,
         amountLuna: binding.amountLuna,
         recipient: contribution.contributorAddress,
@@ -217,16 +224,16 @@ export function ResponseApp() {
 
     {review.kind === 'loading' && <section className="inviteWrap">
       <article className="sheet inviteSheet invalid">
-        <p className="eyebrow">VERIFYING RESPONSE</p>
-        <h1>Checking the private contribution.</h1>
-        <p>PactPay is matching the original contribution, signed acceptance fields, recipient, and evidence fingerprint.</p>
+        <p className="eyebrow">VERIFYING ACCEPTANCE PROOF</p>
+        <h1>Authenticating the contributor.</h1>
+        <p>PactPay is rebuilding the canonical message, verifying the Nimiq signature, matching the public key to the contributor address, and checking the evidence fingerprint.</p>
       </article>
     </section>}
 
     {review.kind === 'error' && <section className="inviteWrap">
       <article className="sheet inviteSheet invalid">
-        <p className="eyebrow">LINK ERROR</p>
-        <h1>This private response cannot be opened.</h1>
+        <p className="eyebrow">ACCEPTANCE VERIFICATION FAILED</p>
+        <h1>This contribution cannot be reviewed or paid.</h1>
         <p>{review.message}</p>
         <button className="primary" onClick={() => { window.location.hash = '/'; }}>Return to PactPay</button>
       </article>
@@ -234,20 +241,25 @@ export function ResponseApp() {
 
     {review.kind === 'ready' && <section className="inviteWrap">
       <article className="sheet inviteSheet">
-        <p className="eyebrow">SIGNED CONTRIBUTION RECEIVED</p>
+        <p className="eyebrow">VERIFIED CONTRIBUTION RECEIVED</p>
         <h1>{review.contribution.role}</h1>
         <div className="verification">
           <span>✓ Contribution matched</span>
           <span>✓ Terms fingerprint matched</span>
-          <span>✓ Signed acceptance fields matched</span>
+          <span>✓ Canonical acceptance message matched</span>
+          <span>✓ Nimiq signature cryptographically valid</span>
+          <span>✓ Public key matched contributor address</span>
           <span>✓ Evidence fingerprint verified</span>
         </div>
         <section>
-          <h2>Signed acceptance</h2>
-          <p>The contributor approved a canonical PactPay acceptance message through Nimiq Pay.</p>
+          <h2>Verified acceptance</h2>
+          <p>The contributor proved control of the Nimiq key associated with the payment address.</p>
           <small>Address: {short(review.contribution.acceptance?.contributorAddress ?? '')}</small><br />
           <small>Public key: {short(review.contribution.acceptance?.publicKey ?? '')}</small><br />
-          <small>Signature: {short(review.contribution.acceptance?.signature ?? '')}</small>
+          <small>Signature: {short(review.contribution.acceptance?.signature ?? '')}</small><br />
+          <small>Message hash: {short(review.contribution.acceptance?.verification?.canonicalMessageHash ?? '')}</small><br />
+          <small>Signing mode: {review.contribution.acceptance?.verification?.signingSemantics}</small><br />
+          <small>Verified: {review.contribution.acceptance?.verification?.verifiedAt ? new Date(review.contribution.acceptance.verification.verifiedAt).toLocaleString() : ''}</small>
         </section>
         <section>
           <h2>Evidence</h2>
@@ -279,6 +291,6 @@ export function ResponseApp() {
       </article>
     </section>}
 
-    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Verified NIM settlement.</span></footer>
+    <footer><strong>PactPay</strong><span>Verified acceptance. Fingerprinted evidence. Verified NIM settlement.</span></footer>
   </main>;
 }
