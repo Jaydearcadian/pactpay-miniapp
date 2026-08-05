@@ -35,11 +35,11 @@ export type SettlementState =
 export type SettlementVerification = {
   transactionFound: boolean;
   included: boolean;
+  hashMatches: boolean;
   recipientMatches: boolean;
   amountMatches: boolean;
   dataMatches: boolean;
   blockHeight?: number;
-  checkedAt: string;
 };
 
 export type SettlementReceipt = {
