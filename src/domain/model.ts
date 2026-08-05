@@ -26,9 +26,14 @@ export type AcceptanceRecord = {
 };
 
 export type SettlementReceipt = {
+  version: 1;
+  receiptId: string;
+  transactionData: string;
   transactionHash: string;
+  settlementState: 'broadcast';
   settledAt: string;
   amountNim: number;
+  amountLuna: number;
   recipient: string;
 };
 
