@@ -5,6 +5,7 @@ import { decodePayload, encodePayload, type ReceiptPayload, type ResponsePayload
 import { fingerprintEvidence } from '../lib/fingerprint';
 import { assertAcceptanceRecordMatches } from '../nimiq/acceptance';
 import { sendNim } from '../nimiq/client';
+import { createReceiptBinding } from '../settlement/receipt';
 import { loadState, saveState } from '../storage/repository';
 
 type ReviewState =
@@ -136,25 +137,40 @@ export function ResponseApp() {
       return;
     }
     if (contribution.receipt) {
-      setMessage('This contribution is already settled.');
+      setMessage('This contribution already has a settlement receipt.');
       return;
     }
 
     setBusy(true);
-    setMessage('Waiting for Nimiq Pay confirmation…');
+    setMessage('Creating the PactPay receipt reference…');
     try {
-      const transactionHash = await sendNim({
+      const binding = await createReceiptBinding({
+        contributionId: contribution.id,
+        outcomeId: contribution.outcomeId,
+        termsHash: contribution.termsHash,
+        acceptance: contribution.acceptance,
+        evidenceHash: contribution.evidence.hash,
         recipient: contribution.contributorAddress,
         amountNim: contribution.amountNim,
-        contributionId: contribution.id,
-        evidenceHash: contribution.evidence.hash,
+      });
+
+      setMessage('Waiting for Nimiq Pay approval. The transaction includes the PactPay receipt ID.');
+      const transactionHash = await sendNim({
+        recipient: contribution.contributorAddress,
+        amountLuna: binding.amountLuna,
+        transactionData: binding.transactionData,
       });
       const settledAt = new Date().toISOString();
       const settled = transitionContribution(contribution, 'settled', {
         receipt: {
+          version: 1,
+          receiptId: binding.receiptId,
+          transactionData: binding.transactionData,
           transactionHash,
+          settlementState: 'broadcast',
           settledAt,
           amountNim: contribution.amountNim,
+          amountLuna: binding.amountLuna,
           recipient: contribution.contributorAddress,
         },
       });
@@ -166,12 +182,19 @@ export function ResponseApp() {
         version: 1,
         kind: 'receipt',
         contributionId: contribution.id,
+        outcomeId: contribution.outcomeId,
         outcomeLabel: outcome.privateLabel,
         role: contribution.role,
+        termsHash: contribution.termsHash,
+        acceptanceSignature: contribution.acceptance.signature,
         amountNim: contribution.amountNim,
+        amountLuna: binding.amountLuna,
         recipient: contribution.contributorAddress,
         evidenceHash: contribution.evidence.hash,
+        receiptId: binding.receiptId,
+        transactionData: binding.transactionData,
         transactionHash,
+        settlementState: 'broadcast',
         settledAt,
       };
       window.location.hash = `/receipt/${encodePayload(receipt)}`;
@@ -242,19 +265,20 @@ export function ResponseApp() {
           <span>You are paying</span>
           <strong>{review.contribution.amountNim} NIM</strong>
           <small>For {review.contribution.role} · {review.outcome.privateLabel}</small>
+          <small>The NIM transaction will carry a deterministic <code>PP1:</code> receipt reference.</small>
         </div>
         {review.contribution.status === 'settled'
-          ? <div className="successBox"><h2>Already settled</h2><p>This contribution already has a stored settlement receipt.</p></div>
+          ? <div className="successBox"><h2>Payment broadcast</h2><p>This contribution has a receipt-bound NIM transaction.</p><small>{review.contribution.receipt?.transactionData}</small></div>
           : <button
               className="primary wide"
               disabled={busy}
               onClick={() => settle(review.outcome, review.contribution)}
             >
-              {busy ? 'Waiting for Nimiq Pay…' : `Approve and pay ${review.contribution.amountNim} NIM`}
+              {busy ? 'Preparing receipt-bound payment…' : `Approve and pay ${review.contribution.amountNim} NIM`}
             </button>}
       </article>
     </section>}
 
-    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Verifiable NIM settlement.</span></footer>
+    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Receipt-bound NIM settlement.</span></footer>
   </main>;
 }
