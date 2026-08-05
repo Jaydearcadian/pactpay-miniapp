@@ -139,6 +139,7 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
   const confirmed = receipt.settlementState === 'confirmed';
   const failed = receipt.settlementState === 'verification-failed';
   const pending = receipt.settlementState === 'confirming';
+  const acceptanceProof = receipt.acceptanceVerification;
 
   async function copyReceipt(): Promise<void> {
     await navigator.clipboard.writeText(JSON.stringify(receipt, null, 2));
@@ -161,10 +162,19 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
 
         <div className="privacyBox">
           <strong>Receipt-bound transaction</strong>
-          <p>The transaction carries <code>{receipt.transactionData}</code>, binding the frozen terms, signed acceptance, evidence, recipient, and exact amount.</p>
+          <p>The transaction carries <code>{receipt.transactionData}</code>, binding the frozen terms, verified acceptance, evidence, recipient, and exact amount.</p>
         </div>
 
-        {checking && <div className="nextAction"><span>VERIFICATION STATE</span><strong>Checking Nimiq transaction inclusion and settlement fields…</strong></div>}
+        <section>
+          <h2>Acceptance proof</h2>
+          {acceptanceProof ? <div className="verification">
+            <span>{acceptanceProof.messageMatches ? '✓' : '×'} Canonical message matched</span>
+            <span>{acceptanceProof.signatureValid ? '✓' : '×'} Nimiq signature valid</span>
+            <span>{acceptanceProof.addressMatchesPublicKey ? '✓' : '×'} Public key matched recipient</span>
+          </div> : <p>This older receipt predates cryptographic acceptance-proof metadata.</p>}
+        </section>
+
+        {checking && <div className="nextAction"><span>SETTLEMENT VERIFICATION</span><strong>Checking Nimiq transaction inclusion and settlement fields…</strong></div>}
         {!checking && rpcError && <div className="nextAction"><span>VERIFICATION UNAVAILABLE</span><strong>{rpcError}</strong></div>}
         {!checking && pending && !rpcError && <div className="nextAction"><span>AWAITING CONFIRMATION</span><strong>{receipt.verification?.transactionFound ? 'Transaction found but not yet included.' : 'Transaction is not indexed yet.'}</strong></div>}
         {!checking && failed && <div className="nextAction"><span>VERIFICATION FAILED</span><strong>{receipt.verificationError}</strong></div>}
@@ -184,19 +194,24 @@ function VerifiedReceipt({ initialReceipt }: { initialReceipt: BoundReceiptPaylo
           <div><dt>Recipient</dt><dd>{receipt.recipient}</dd></div>
           <div><dt>Amount</dt><dd>{receipt.amountLuna.toLocaleString()} luna</dd></div>
           <div><dt>Terms fingerprint</dt><dd>{short(receipt.termsHash)}</dd></div>
+          {receipt.acceptancePublicKey && <div><dt>Acceptance public key</dt><dd>{short(receipt.acceptancePublicKey)}</dd></div>}
           <div><dt>Acceptance signature</dt><dd>{short(receipt.acceptanceSignature)}</dd></div>
+          {acceptanceProof && <div><dt>Acceptance message hash</dt><dd>{short(acceptanceProof.canonicalMessageHash)}</dd></div>}
+          {acceptanceProof && <div><dt>Signing semantics</dt><dd>{acceptanceProof.signingSemantics}</dd></div>}
+          {acceptanceProof && <div><dt>Acceptance verifier</dt><dd>{acceptanceProof.verifier}</dd></div>}
+          {acceptanceProof && <div><dt>Acceptance verified</dt><dd>{formatDate(acceptanceProof.verifiedAt)}</dd></div>}
           <div><dt>Evidence fingerprint</dt><dd>{short(receipt.evidenceHash)}</dd></div>
           <div><dt>Broadcast at</dt><dd>{formatDate(receipt.settledAt)}</dd></div>
           {receipt.confirmedBlockHeight !== undefined && <div><dt>Block height</dt><dd>{receipt.confirmedBlockHeight.toLocaleString()}</dd></div>}
-          {receipt.confirmedAt && <div><dt>Verified at</dt><dd>{formatDate(receipt.confirmedAt)}</dd></div>}
+          {receipt.confirmedAt && <div><dt>Settlement verified</dt><dd>{formatDate(receipt.confirmedAt)}</dd></div>}
         </dl>
 
         {!checking && !confirmed && <button className="primary wide" onClick={() => { void verify(); }}>Retry verification</button>}
-        <button className={confirmed ? 'primary wide' : 'secondary wide'} onClick={() => { void copyReceipt(); }}>Copy verified receipt JSON</button>
+        <button className={confirmed ? 'primary wide' : 'secondary wide'} onClick={() => { void copyReceipt(); }}>Copy complete receipt JSON</button>
         <button className="secondary wide" onClick={() => { window.location.hash = '/app'; }}>Return to workspace</button>
       </article>
     </section>
 
-    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Verified NIM settlement.</span></footer>
+    <footer><strong>PactPay</strong><span>Verified acceptance. Fingerprinted evidence. Verified NIM settlement.</span></footer>
   </main>;
 }
