@@ -4,6 +4,19 @@ import { buildAcceptanceMessage } from './acceptance';
 
 const SESSION_KEY = 'pactpay-nimiq-account';
 
+type BoundSettlementSend = {
+  recipient: string;
+  amountLuna: number;
+  transactionData: string;
+};
+
+type LegacySettlementSend = {
+  recipient: string;
+  amountNim: number;
+  contributionId: string;
+  evidenceHash: string;
+};
+
 function providerErrorMessage(value: unknown): string {
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
@@ -92,28 +105,42 @@ export async function signContributionAcceptance(input: {
   };
 }
 
-export async function sendNim(input: {
+function prepareSend(input: BoundSettlementSend | LegacySettlementSend): {
   recipient: string;
   amountLuna: number;
   transactionData: string;
-}): Promise<string> {
+} {
   const recipient = input.recipient.trim();
   if (!recipient) throw new Error('A contributor Nimiq address is required.');
-  if (!Number.isSafeInteger(input.amountLuna) || input.amountLuna <= 0) {
-    throw new Error('The NIM amount must be a positive integer in luna.');
-  }
-  if (!input.transactionData.startsWith('PP1:')) {
-    throw new Error('The settlement is missing a PactPay v1 receipt reference.');
-  }
-  if (new TextEncoder().encode(input.transactionData).byteLength > 64) {
-    throw new Error('The PactPay receipt reference exceeds Nimiq transaction data limits.');
+
+  if ('transactionData' in input) {
+    if (!Number.isSafeInteger(input.amountLuna) || input.amountLuna <= 0) {
+      throw new Error('The NIM amount must be a positive integer in luna.');
+    }
+    if (!input.transactionData.startsWith('PP1:')) {
+      throw new Error('The settlement is missing a PactPay v1 receipt reference.');
+    }
+    if (new TextEncoder().encode(input.transactionData).byteLength > 64) {
+      throw new Error('The PactPay receipt reference exceeds Nimiq transaction data limits.');
+    }
+    return { recipient, amountLuna: input.amountLuna, transactionData: input.transactionData };
   }
 
+  if (!Number.isFinite(input.amountNim) || input.amountNim <= 0) {
+    throw new Error('The NIM amount must be greater than zero.');
+  }
+  const amountLuna = Math.round(input.amountNim * 100_000);
+  const transactionData = `PACTPAY|${input.contributionId.slice(0, 8)}|${input.evidenceHash.slice(0, 20)}`.slice(0, 64);
+  return { recipient, amountLuna, transactionData };
+}
+
+export async function sendNim(input: BoundSettlementSend | LegacySettlementSend): Promise<string> {
+  const prepared = prepareSend(input);
   const nimiq = await getNimiqProvider();
   const response = await nimiq.sendBasicTransactionWithData({
-    recipient,
-    value: input.amountLuna,
-    data: input.transactionData,
+    recipient: prepared.recipient,
+    value: prepared.amountLuna,
+    data: prepared.transactionData,
   });
 
   if (typeof response !== 'string' || !response) throw new Error(providerErrorMessage(response));
