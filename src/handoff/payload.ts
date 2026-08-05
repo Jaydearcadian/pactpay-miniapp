@@ -1,5 +1,6 @@
 import type {
   AcceptanceRecord,
+  AcceptanceVerification,
   Contribution,
   EvidenceRecord,
   SettlementState,
@@ -53,6 +54,8 @@ export type BoundReceiptPayload = LegacyReceiptPayload & {
   outcomeId: string;
   termsHash: string;
   acceptanceSignature: string;
+  acceptancePublicKey?: string;
+  acceptanceVerification?: AcceptanceVerification;
   amountLuna: number;
   receiptId: string;
   transactionData: string;
