@@ -1,12 +1,4 @@
-export type SettlementVerification = {
-  transactionFound: boolean;
-  included: boolean;
-  recipientMatches: boolean;
-  amountMatches: boolean;
-  dataMatches: boolean;
-  blockHeight?: number;
-  checkedAt: string;
-};
+import type { SettlementVerification } from '../domain/model';
 
 export type VerifySettlementInput = {
   transactionHash: string;
@@ -18,6 +10,7 @@ export type VerifySettlementInput = {
 export type VerifySettlementResult = {
   state: 'confirmed' | 'pending' | 'verification-failed';
   verification: SettlementVerification;
+  checkedAt: string;
   error?: string;
 };
 
@@ -52,6 +45,10 @@ function normalizeInteger(value: unknown): number | null {
   return null;
 }
 
+function normalizeHash(value: unknown): string {
+  return typeof value === 'string' ? value.trim().replace(/^0x/u, '').toLowerCase() : '';
+}
+
 function decodeHex(value: string): string | null {
   const normalized = value.startsWith('0x') ? value.slice(2) : value;
   if (!normalized || normalized.length % 2 !== 0 || !/^[0-9a-f]+$/iu.test(normalized)) return null;
@@ -76,23 +73,29 @@ function normalizeData(value: unknown): string {
   return '';
 }
 
-function extractTransaction(result: unknown): Record<string, unknown> | null {
+function extractTransaction(result: unknown): { transaction: Record<string, unknown>; metadata: Record<string, unknown> } | null {
   const record = asRecord(result);
   if (!record) return null;
-  const nested = first(record, ['transaction', 'tx', 'executedTransaction']);
-  return asRecord(nested) ?? record;
+  const data = asRecord(record.data);
+  const metadata = asRecord(record.metadata) ?? {};
+  if (data) return { transaction: data, metadata };
+  const nested = asRecord(first(record, ['transaction', 'tx', 'executedTransaction']));
+  return { transaction: nested ?? record, metadata };
 }
 
-function blockHeight(record: Record<string, unknown>): number | undefined {
-  const direct = normalizeInteger(first(record, ['blockNumber', 'blockHeight', 'block_number', 'block_height']));
+function blockHeight(transaction: Record<string, unknown>, metadata: Record<string, unknown>): number | undefined {
+  const direct = normalizeInteger(first(transaction, ['blockNumber', 'blockHeight', 'block_number', 'block_height']));
   if (direct !== null) return direct;
-  const block = asRecord(first(record, ['block', 'blockInfo', 'block_info']));
+  const fromMetadata = normalizeInteger(first(metadata, ['blockNumber', 'blockHeight', 'block_number', 'block_height']));
+  if (fromMetadata !== null) return fromMetadata;
+  const block = asRecord(first(transaction, ['block', 'blockInfo', 'block_info']));
   const nested = block ? normalizeInteger(first(block, ['number', 'height', 'blockNumber', 'block_number'])) : null;
   return nested ?? undefined;
 }
 
 export async function verifyNimiqSettlement(input: VerifySettlementInput): Promise<VerifySettlementResult> {
-  if (!input.transactionHash.trim()) throw new Error('A transaction hash is required for verification.');
+  const expectedHash = normalizeHash(input.transactionHash);
+  if (!expectedHash) throw new Error('A transaction hash is required for verification.');
 
   const response = await fetch(rpcUrl(), {
     method: 'POST',
@@ -107,48 +110,74 @@ export async function verifyNimiqSettlement(input: VerifySettlementInput): Promi
 
   if (!response.ok) throw new Error(`Nimiq RPC returned HTTP ${response.status}.`);
   const body = await response.json() as { result?: unknown; error?: { message?: string } };
-  if (body.error) throw new Error(body.error.message || 'Nimiq RPC rejected the verification request.');
+  if (body.error) {
+    const message = body.error.message || 'Nimiq RPC rejected the verification request.';
+    if (/not found/iu.test(message)) {
+      const checkedAt = new Date().toISOString();
+      return {
+        state: 'pending',
+        checkedAt,
+        verification: {
+          transactionFound: false,
+          included: false,
+          hashMatches: false,
+          recipientMatches: false,
+          amountMatches: false,
+          dataMatches: false,
+        },
+      };
+    }
+    throw new Error(message);
+  }
 
-  const transaction = extractTransaction(body.result);
+  const fetched = extractTransaction(body.result);
   const checkedAt = new Date().toISOString();
-  if (!transaction) {
+  if (!fetched) {
     return {
       state: 'pending',
+      checkedAt,
       verification: {
         transactionFound: false,
         included: false,
+        hashMatches: false,
         recipientMatches: false,
         amountMatches: false,
         dataMatches: false,
-        checkedAt,
       },
     };
   }
 
+  const { transaction, metadata } = fetched;
+  const returnedHash = normalizeHash(first(transaction, ['hash', 'transactionHash', 'transaction_hash']));
   const recipient = normalizeAddress(first(transaction, ['recipient', 'recipientAddress', 'recipient_address', 'to']));
   const value = normalizeInteger(first(transaction, ['value', 'amount', 'valueLuna', 'value_luna']));
   const data = normalizeData(first(transaction, ['data', 'recipientData', 'recipient_data', 'extraData', 'extra_data']));
-  const height = blockHeight(transaction);
+  const height = blockHeight(transaction, metadata);
   const includedFlag = first(transaction, ['included', 'confirmed', 'executed']);
   const included = height !== undefined || includedFlag === true;
 
   const verification: SettlementVerification = {
     transactionFound: true,
     included,
+    hashMatches: returnedHash === expectedHash,
     recipientMatches: recipient === normalizeAddress(input.recipient),
     amountMatches: value === input.amountLuna,
     dataMatches: data === input.transactionData,
     blockHeight: height,
-    checkedAt,
   };
 
-  if (!included) return { state: 'pending', verification };
-  const matches = verification.recipientMatches && verification.amountMatches && verification.dataMatches;
+  if (!included) return { state: 'pending', verification, checkedAt };
+  const matches = verification.hashMatches
+    && verification.recipientMatches
+    && verification.amountMatches
+    && verification.dataMatches;
+
   return matches
-    ? { state: 'confirmed', verification }
+    ? { state: 'confirmed', verification, checkedAt }
     : {
         state: 'verification-failed',
         verification,
+        checkedAt,
         error: 'The included Nimiq transaction does not match this PactPay receipt.',
       };
 }
