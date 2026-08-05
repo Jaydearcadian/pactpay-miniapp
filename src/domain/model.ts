@@ -25,22 +25,17 @@ export type AcceptanceRecord = {
   signature: string;
 };
 
-export type LegacySettlementReceipt = {
+export type SettlementReceipt = {
   transactionHash: string;
   settledAt: string;
   amountNim: number;
   recipient: string;
+  version?: 1;
+  receiptId?: string;
+  transactionData?: string;
+  settlementState?: 'broadcast';
+  amountLuna?: number;
 };
-
-export type BoundSettlementReceipt = LegacySettlementReceipt & {
-  version: 1;
-  receiptId: string;
-  transactionData: string;
-  settlementState: 'broadcast';
-  amountLuna: number;
-};
-
-export type SettlementReceipt = LegacySettlementReceipt | BoundSettlementReceipt;
 
 export type Contribution = {
   id: string;
