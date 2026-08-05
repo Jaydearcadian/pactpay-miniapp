@@ -1,4 +1,10 @@
-import type { AcceptanceRecord, Contribution, EvidenceRecord } from '../domain/model';
+import type {
+  AcceptanceRecord,
+  Contribution,
+  EvidenceRecord,
+  SettlementState,
+  SettlementVerification,
+} from '../domain/model';
 
 export type InvitePayload = {
   version: 1;
@@ -50,7 +56,11 @@ export type BoundReceiptPayload = LegacyReceiptPayload & {
   amountLuna: number;
   receiptId: string;
   transactionData: string;
-  settlementState: 'broadcast';
+  settlementState: SettlementState;
+  confirmedAt?: string;
+  confirmedBlockHeight?: number;
+  verification?: SettlementVerification;
+  verificationError?: string;
 };
 
 export type ReceiptPayload = LegacyReceiptPayload | BoundReceiptPayload;
@@ -63,7 +73,7 @@ export function isBoundReceiptPayload(payload: ReceiptPayload): payload is Bound
     && 'termsHash' in payload
     && 'acceptanceSignature' in payload
     && 'outcomeId' in payload
-    && payload.settlementState === 'broadcast';
+    && typeof payload.settlementState === 'string';
 }
 
 function toBase64Url(value: string): string {
