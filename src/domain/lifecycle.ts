@@ -4,7 +4,8 @@ const transitions: Record<ContributionStatus, ContributionStatus[]> = {
   draft: ['invited'],
   invited: ['accepted'],
   accepted: ['submitted'],
-  submitted: ['settled'],
+  submitted: ['payment-broadcast'],
+  'payment-broadcast': ['settled'],
   settled: [],
 };
 
@@ -48,6 +49,7 @@ export function getContributionNextAction(contribution: Contribution): string {
     case 'invited': return 'Awaiting contributor acceptance';
     case 'accepted': return 'Awaiting evidence';
     case 'submitted': return 'Review and settle';
+    case 'payment-broadcast': return 'Verify Nimiq settlement';
     case 'settled': return 'Settlement complete';
   }
 }
