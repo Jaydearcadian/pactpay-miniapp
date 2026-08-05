@@ -40,6 +40,7 @@ export type SettlementVerification = {
   amountMatches: boolean;
   dataMatches: boolean;
   blockHeight?: number;
+  checkedAt?: string;
 };
 
 export type SettlementReceipt = {
