@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './app/App';
+import { BoundReceiptPage } from './app/BoundReceiptPage';
 import { DemoPage } from './app/DemoPage';
 import { InvitationDialog } from './app/InvitationDialog';
 import { InvitationEntryPage } from './app/InvitationEntryPage';
@@ -39,12 +40,12 @@ function RootRouter() {
   let page: React.ReactNode;
   const inviteMatch = hash.match(/^#\/invite\/(.+)$/u);
   if (hash.startsWith('#/response/')) page = <ResponseApp />;
+  else if (hash.startsWith('#/receipt/')) page = <BoundReceiptPage />;
   else if (inviteMatch) page = <SignedInviteRoom payload={inviteMatch[1]} />;
   else if (hash === '#/wallet') page = <WalletPage />;
   else if (hash === '#/demo') page = <DemoPage />;
   else if (hash === '#/open-invitation') page = <InvitationEntryPage />;
   else if (hash === '#/app') page = <><App /><WalletLauncher /></>;
-  else if (hash.startsWith('#/receipt/')) page = <App />;
   else page = <LandingPage />;
 
   return <>{page}<InvitationDialog /></>;
