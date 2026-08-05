@@ -136,15 +136,15 @@ async function verifySignatureRpc(input: {
 
 async function verifySignatureModes(record: AcceptanceRecord, canonicalMessage: string): Promise<{
   valid: boolean;
-  mode: AcceptanceVerification['signatureMode'];
+  semantics: AcceptanceVerification['signingSemantics'];
 }> {
-  const plainValid = await verifySignatureRpc({
+  const rawValid = await verifySignatureRpc({
     message: canonicalMessage,
     publicKey: record.publicKey,
     signature: record.signature,
     isHex: false,
   });
-  if (plainValid) return { valid: true, mode: 'plain-message' };
+  if (rawValid) return { valid: true, semantics: 'raw-message' };
 
   const prefixedPayload = `${NIMIQ_SIGNED_MESSAGE_PREFIX}${canonicalMessage.length}${canonicalMessage}`;
   const prefixedHash = await sha256Hex(prefixedPayload);
@@ -154,7 +154,7 @@ async function verifySignatureModes(record: AcceptanceRecord, canonicalMessage: 
     signature: record.signature,
     isHex: true,
   });
-  return { valid: prefixedValid, mode: 'nimiq-prefixed-sha256' };
+  return { valid: prefixedValid, semantics: 'nimiq-prefixed-sha256' };
 }
 
 export async function verifyAcceptanceProof(
@@ -181,8 +181,8 @@ export async function verifyAcceptanceProof(
     addressMatchesPublicKey: true,
     derivedAddress,
     canonicalMessageHash: await sha256Hex(canonicalMessage),
-    signatureMode: signature.mode,
-    verifier: 'nimiq-rpc',
+    signingSemantics: signature.semantics,
+    verifier: 'nimiq-rpc+core-address-v1',
     verifiedAt: new Date().toISOString(),
   };
 
