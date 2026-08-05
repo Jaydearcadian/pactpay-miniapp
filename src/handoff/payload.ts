@@ -34,12 +34,19 @@ export type ReceiptPayload = {
   version: 1;
   kind: 'receipt';
   contributionId: string;
+  outcomeId: string;
   outcomeLabel: string;
   role: string;
+  termsHash: string;
+  acceptanceSignature: string;
   amountNim: number;
+  amountLuna: number;
   recipient: string;
   evidenceHash: string;
+  receiptId: string;
+  transactionData: string;
   transactionHash: string;
+  settlementState: 'broadcast';
   settledAt: string;
 };
 
