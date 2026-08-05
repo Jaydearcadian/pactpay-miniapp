@@ -3,6 +3,7 @@ export type ContributionStatus =
   | 'invited'
   | 'accepted'
   | 'submitted'
+  | 'payment-broadcast'
   | 'settled';
 
 export type EvidenceRecord = {
