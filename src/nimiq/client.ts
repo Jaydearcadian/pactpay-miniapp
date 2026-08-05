@@ -105,33 +105,24 @@ export async function signContributionAcceptance(input: {
   };
 }
 
-function prepareSend(input: BoundSettlementSend | LegacySettlementSend): {
-  recipient: string;
-  amountLuna: number;
-  transactionData: string;
-} {
+function prepareSend(input: BoundSettlementSend | LegacySettlementSend): BoundSettlementSend {
   const recipient = input.recipient.trim();
   if (!recipient) throw new Error('A contributor Nimiq address is required.');
 
-  if ('transactionData' in input) {
-    if (!Number.isSafeInteger(input.amountLuna) || input.amountLuna <= 0) {
-      throw new Error('The NIM amount must be a positive integer in luna.');
-    }
-    if (!input.transactionData.startsWith('PP1:')) {
-      throw new Error('The settlement is missing a PactPay v1 receipt reference.');
-    }
-    if (new TextEncoder().encode(input.transactionData).byteLength > 64) {
-      throw new Error('The PactPay receipt reference exceeds Nimiq transaction data limits.');
-    }
-    return { recipient, amountLuna: input.amountLuna, transactionData: input.transactionData };
+  if (!('transactionData' in input)) {
+    throw new Error('Legacy settlement is disabled. Create a deterministic PactPay receipt before sending NIM.');
+  }
+  if (!Number.isSafeInteger(input.amountLuna) || input.amountLuna <= 0) {
+    throw new Error('The NIM amount must be a positive integer in luna.');
+  }
+  if (!input.transactionData.startsWith('PP1:')) {
+    throw new Error('The settlement is missing a PactPay v1 receipt reference.');
+  }
+  if (new TextEncoder().encode(input.transactionData).byteLength > 64) {
+    throw new Error('The PactPay receipt reference exceeds Nimiq transaction data limits.');
   }
 
-  if (!Number.isFinite(input.amountNim) || input.amountNim <= 0) {
-    throw new Error('The NIM amount must be greater than zero.');
-  }
-  const amountLuna = Math.round(input.amountNim * 100_000);
-  const transactionData = `PACTPAY|${input.contributionId.slice(0, 8)}|${input.evidenceHash.slice(0, 20)}`.slice(0, 64);
-  return { recipient, amountLuna, transactionData };
+  return { recipient, amountLuna: input.amountLuna, transactionData: input.transactionData };
 }
 
 export async function sendNim(input: BoundSettlementSend | LegacySettlementSend): Promise<string> {
