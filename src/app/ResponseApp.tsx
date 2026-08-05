@@ -67,6 +67,14 @@ export function ResponseApp() {
           throw new Error('The returned terms do not match the original contribution fingerprint.');
         }
 
+        if (original.status === 'payment-broadcast' || original.status === 'settled') {
+          if (active) setReview({ kind: 'ready', outcome, contribution: original });
+          return;
+        }
+        if (original.status === 'draft') {
+          throw new Error('This contribution was never issued as a private invitation.');
+        }
+
         const acceptance = assertAcceptanceRecordMatches(response.acceptance, {
           contributionId: response.contributionId,
           outcomeId: response.outcomeId,
@@ -84,14 +92,6 @@ export function ResponseApp() {
         });
         if (expectedEvidenceHash !== response.evidence.hash) {
           throw new Error('The evidence package was changed after it was created.');
-        }
-
-        if (original.status === 'settled') {
-          if (active) setReview({ kind: 'ready', outcome, contribution: original });
-          return;
-        }
-        if (original.status === 'draft') {
-          throw new Error('This contribution was never issued as a private invitation.');
         }
 
         const accepted = original.status === 'invited'
@@ -161,7 +161,7 @@ export function ResponseApp() {
         transactionData: binding.transactionData,
       });
       const settledAt = new Date().toISOString();
-      const settled = transitionContribution(contribution, 'settled', {
+      const broadcast = transitionContribution(contribution, 'payment-broadcast', {
         receipt: {
           version: 1,
           receiptId: binding.receiptId,
@@ -176,7 +176,7 @@ export function ResponseApp() {
       });
 
       const latestState = loadState();
-      saveState(replaceContribution(latestState, outcome.id, settled));
+      saveState(replaceContribution(latestState, outcome.id, broadcast));
 
       const receipt: ReceiptPayload = {
         version: 1,
@@ -267,8 +267,8 @@ export function ResponseApp() {
           <small>For {review.contribution.role} · {review.outcome.privateLabel}</small>
           <small>The NIM transaction will carry a deterministic <code>PP1:</code> receipt reference.</small>
         </div>
-        {review.contribution.status === 'settled'
-          ? <div className="successBox"><h2>Payment broadcast</h2><p>This contribution has a receipt-bound NIM transaction.</p><small>{review.contribution.receipt?.transactionData}</small></div>
+        {review.contribution.status === 'payment-broadcast' || review.contribution.status === 'settled'
+          ? <div className="successBox"><h2>{review.contribution.status === 'settled' ? 'Settlement verified' : 'Payment broadcast'}</h2><p>This contribution has a receipt-bound NIM transaction.</p><small>{review.contribution.receipt?.transactionData}</small></div>
           : <button
               className="primary wide"
               disabled={busy}
@@ -279,6 +279,6 @@ export function ResponseApp() {
       </article>
     </section>}
 
-    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Receipt-bound NIM settlement.</span></footer>
+    <footer><strong>PactPay</strong><span>Clear terms. Signed acceptance. Verified NIM settlement.</span></footer>
   </main>;
 }
